@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "./node_modules/.bin/browserify -e src/index.js -o lib/client.js && ./node_modules/.bin/uglifyjs lib/client.js -o lib/client.min.js"
+    "build": "./node_modules/.bin/browserify -e src/index.js -o lib/client.js && ./node_modules/.bin/uglifyjs lib/client.js -o lib/client.min.js && cp lib/client.js docs/client.js"
   },
   "repository": {
     "type": "git",
