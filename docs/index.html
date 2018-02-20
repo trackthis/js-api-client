@@ -10,9 +10,7 @@
 
         <title>Trackthis API client example</title>
 
-        <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700" rel="stylesheet">
         <link rel="stylesheet" href="style.css" />
-        <link rel="stylesheet" href="markdown.css" />
 
         <!-- IE fixes -->
         <!--[if lt IE 9]>
@@ -24,10 +22,22 @@
     </head>
     <body>
 
+        <a href="https://github.com/trackthis/js-api-client"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"></a>
+
         <script type="text/x-markdown">
             # Trackthis API client
 
-            Text has been rendered from markdown
+            This API client is the default provided for connecting with trackthis. The client contains everything needed to make full use of the TrackThis API.
+
+            ## Installation
+
+            ```sh
+            npm install --save trackthis-api-client
+            ```
+
+            ## Usage
+
+
         </script>
 
 
@@ -36,6 +46,7 @@
 
         <!-- Render all markdown blocks -->
         <script src="https://cdn.rawgit.com/showdownjs/showdown/1.8.6/dist/showdown.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
         <script>
           (function() {
             var renderer = new showdown.Converter();
@@ -47,7 +58,6 @@
               if (!src.length) return;
               var prefix = src[0].match(/^\s+/)[0];
               src = src.map(function(str){return str.replace(new RegExp('^'+prefix),'')}).join('\n');
-              console.log(src);
               var newEl = document.createElement('DIV');
               newEl.innerHTML = renderer.makeHtml(src);
               el.parentNode.insertBefore(newEl,el);
