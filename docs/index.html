@@ -8,20 +8,53 @@
 
         <meta name="description" content="Trackthis API client example" />
 
-        <title>Trackthis API client</title>
+        <title>Trackthis API client example</title>
 
         <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700" rel="stylesheet">
-        <!--<link rel="stylesheet" href="/assets/mdi/iconfont/material-icons.css" />-->
-        <!--<link rel="stylesheet" href="/assets/getmdl-select/getmdl-select.min.css" />-->
-        <!--<link rel="stylesheet" href="/assets/dygraphs/dygraph.css" />-->
-        <!--<link rel="stylesheet" href="/assets/css/global.css" />-->
-        <!--<link rel="stylesheet" href="/api/docs/css/hljs-github.css">-->
-        <!--<link rel="stylesheet" href="/api/docs/css/style.css">-->
+        <link rel="stylesheet" href="style.css" />
+        <link rel="stylesheet" href="markdown.css" />
+
+        <!-- IE fixes -->
+        <!--[if lt IE 9]>
+            <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <![endif]-->
+        <script>
+          NodeList.prototype.forEach = NodeList.prototype.forEach || Array.prototype.forEach;
+        </script>
     </head>
     <body>
 
+        <script type="text/x-markdown">
+            # Trackthis API client
+
+            Text has been rendered from markdown
+        </script>
 
 
-        <script src="../index.js"></script>
+        <!-- Load the trackthis client -->
+        <script src="client.js"></script>
+
+        <!-- Render all markdown blocks -->
+        <script src="https://cdn.rawgit.com/showdownjs/showdown/1.8.6/dist/showdown.min.js"></script>
+        <script>
+          (function() {
+            var renderer = new showdown.Converter();
+            document.querySelectorAll('script[type="text/x-markdown"]').forEach(function(el) {
+              var src = el.innerHTML.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+              while( src.length && !src[0].trim() ) src.shift();
+              while( src.length && !src[src.length-1] ) src.pop();
+              while( src.length && !src[src.length-1].trim() ) src.pop();
+              if (!src.length) return;
+              var prefix = src[0].match(/^\s+/)[0];
+              src = src.map(function(str){return str.replace(new RegExp('^'+prefix),'')}).join('\n');
+              console.log(src);
+              var newEl = document.createElement('DIV');
+              newEl.innerHTML = renderer.makeHtml(src);
+              el.parentNode.insertBefore(newEl,el);
+              el.parentNode.removeChild(el);
+            });
+          })();
+        </script>
+
     </body>
 </html>
