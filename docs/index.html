@@ -10,9 +10,8 @@
 
         <title>Trackthis API client example</title>
 
-        <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700" rel="stylesheet">
-        <link rel="stylesheet" href="style.css" />
-        <link rel="stylesheet" href="markdown.css" />
+        <link rel="stylesheet" href="assets/style.css" />
+        <link rel="stylesheet" href="assets/hljs.css" />
 
         <!-- IE fixes -->
         <!--[if lt IE 9]>
@@ -24,36 +23,56 @@
     </head>
     <body>
 
-        <script type="text/x-markdown">
-            # Trackthis API client
+        <a href="https://github.com/trackthis/js-api-client"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"></a>
 
-            Text has been rendered from markdown
+        <script type="text/x-markdown" src="readme.md"></script>
+
+
+        <!-- Load our own dependencies -->
+        <script src="assets/client.js"></script>
+        <script src="assets/cbq.js"></script>
+        <script src="assets/get-contents.js"></script>
+
+        <!-- Load external dependencies -->
+        <script src="https://cdn.rawgit.com/showdownjs/showdown/1.8.6/dist/showdown.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+        <script>
+            var queue    = [],
+                renderer = new showdown.Converter();
+            document.querySelectorAll('script[type="text/x-markdown"]').forEach(function(el) {
+              queue.push(function(d,resolve) {
+                function renderBlock(src) {
+                  src = src.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+                  while( src.length && !src[0].trim() ) src.shift();
+                  while( src.length && !src[src.length-1] ) src.pop();
+                  while( src.length && !src[src.length-1].trim() ) src.pop();
+                  if (!src.length) return;
+                  var prefix = (src[0].match(/^\s+/)||[''])[0];
+                  src = src.map(function(str){return str.replace(new RegExp('^'+prefix),'')}).join('\n');
+                  var newEl = document.createElement('DIV');
+                  newEl.innerHTML = renderer.makeHtml(src);
+                  el.parentNode.insertBefore(newEl,el);
+                  el.parentNode.removeChild(el);
+                }
+                if ( el.innerHTML.length ) {
+                  renderBlock(el.innerHTML);
+                  resolve();
+                } else if ( el.src.length ) {
+                  getContents(el.src,function(response) {
+                    renderBlock(response.text);
+                  });
+                } else {
+                  resolve();
+                }
+              });
+            });
+            cbq(queue);
         </script>
 
-
-        <!-- Load the trackthis client -->
-        <script src="client.js"></script>
-
-        <!-- Render all markdown blocks -->
-        <script src="https://cdn.rawgit.com/showdownjs/showdown/1.8.6/dist/showdown.min.js"></script>
+        <!-- Highlight all code blocks -->
         <script>
-          (function() {
-            var renderer = new showdown.Converter();
-            document.querySelectorAll('script[type="text/x-markdown"]').forEach(function(el) {
-              var src = el.innerHTML.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
-              while( src.length && !src[0].trim() ) src.shift();
-              while( src.length && !src[src.length-1] ) src.pop();
-              while( src.length && !src[src.length-1].trim() ) src.pop();
-              if (!src.length) return;
-              var prefix = src[0].match(/^\s+/)[0];
-              src = src.map(function(str){return str.replace(new RegExp('^'+prefix),'')}).join('\n');
-              console.log(src);
-              var newEl = document.createElement('DIV');
-              newEl.innerHTML = renderer.makeHtml(src);
-              el.parentNode.insertBefore(newEl,el);
-              el.parentNode.removeChild(el);
-            });
-          })();
+          document.querySelectorAll('pre code').forEach(hljs.highlightBlock);
         </script>
 
     </body>

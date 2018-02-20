@@ -1,13 +1,12 @@
-/* markdown7 from https://github.com/jasonm23/markdown-css-themes */
+/* based on markdown7 from https://github.com/jasonm23/markdown-css-themes */
+
+@import url("https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700|Raleway:100,300,400,500,700");
 
 body {
-    font-family      : Roboto, Helvetica, arial, sans-serif;
-    font-size        : 14px;
+    font-family      : Roboto, sans-serif;
     line-height      : 1.6;
-    padding-top      : 10px;
-    padding-bottom   : 10px;
+    padding          : 1em 3em;
     background-color : white;
-    padding          : 30px;
 }
 
 body > *:first-child {
@@ -38,9 +37,10 @@ a.anchor {
 }
 
 h1, h2, h3, h4, h5, h6 {
-    margin                 : 20px 0 10px;
+    margin                 : 1em 0 0.5em 0;
     padding                : 0;
     font-weight            : bold;
+    font-family            : Raleway, sans-serif;
     -webkit-font-smoothing : antialiased;
     cursor                 : text;
     position               : relative;
@@ -75,31 +75,31 @@ h6 tt, h6 code {
 }
 
 h1 {
-    font-size : 28px;
+    font-size : 1.8rem;
     color     : black;
 }
 
 h2 {
-    font-size     : 24px;
+    font-size     : 1.5rem;
     border-bottom : 1px solid #cccccc;
     color         : black;
 }
 
 h3 {
-    font-size : 18px;
+    font-size : 1.25rem;
 }
 
 h4 {
-    font-size : 16px;
+    font-size : 1.1rem;
 }
 
 h5 {
-    font-size : 14px;
+    font-size : 1rem;
 }
 
 h6 {
-    color     : #777777;
-    font-size : 14px;
+    color     : #777;
+    font-size : 1rem;
 }
 
 p, blockquote, ul, ol, dl, li, table, pre {
