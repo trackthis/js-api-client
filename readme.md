@@ -15,7 +15,7 @@ npm install --save trackthis-api-client
 ```html
 <!-- Self-hosted -->
 <!-- uses define (AMD) or exports window.trackthisApi -->
-<script src="path/to/browser.min.js"></script>
+<script src="path/to/lib/browser.min.js"></script>
 
 <!-- Rawgit cdn -->
 <!-- uses define (AMD) or exports window.trackthisApi -->
