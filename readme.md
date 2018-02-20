@@ -36,5 +36,8 @@ require.config({
 #### NodeJS / Browserify
 
 ```js
-var apiClient = require('trackthis-api-client');
+var trackthisApi = require('trackthis-api-client');
 ```
+
+## Usage
+

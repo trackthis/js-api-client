@@ -38,8 +38,12 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
 
         <script>
-            var queue    = [],
-                renderer = new showdown.Converter();
+
+            // Initialize call queue
+            var queue    = [];
+
+            // Render all markdown elements
+            var renderer = new showdown.Converter();
             document.querySelectorAll('script[type="text/x-markdown"]').forEach(function(el) {
               queue.push(function(d,resolve) {
                 function renderBlock(src) {
@@ -61,18 +65,23 @@
                 } else if ( el.src.length ) {
                   getContents(el.src,function(response) {
                     renderBlock(response.text);
+                    resolve();
                   });
                 } else {
                   resolve();
                 }
               });
             });
-            cbq(queue);
-        </script>
 
-        <!-- Highlight all code blocks -->
-        <script>
-          document.querySelectorAll('pre code').forEach(hljs.highlightBlock);
+            // Highlight all code blocks
+            queue.push(function(d,resolve) {
+              console.log('dinges');
+              document.querySelectorAll('pre code').forEach(hljs.highlightBlock);
+              resolve();
+            });
+
+            // Start the queue
+            cbq(queue);
         </script>
 
     </body>
