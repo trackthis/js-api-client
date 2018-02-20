@@ -1,5 +1,5 @@
 {
-  "name": "js-api-client",
+  "name": "trackthis-api-client",
   "version": "0.0.1",
   "description": "Default trackthis API client for javascript",
   "main": "index.js",
@@ -11,5 +11,6 @@
     "url": "https://github.com/finwo/js-api-client"
   },
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {}
 }
