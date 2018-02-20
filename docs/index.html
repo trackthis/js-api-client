@@ -75,7 +75,6 @@
 
             // Highlight all code blocks
             queue.push(function(d,resolve) {
-              console.log('dinges');
               document.querySelectorAll('pre code').forEach(hljs.highlightBlock);
               resolve();
             });

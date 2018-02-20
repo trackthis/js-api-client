@@ -1,45 +1,63 @@
-var ajax = require('ajax-request');
+var ajax    = require('ajax-request'),
+    Promise = require('bluebird'),
+    url     = require('url');
 
-module.exports = function() {
+var api = module.exports = {
+  hostname : null,
+  port     : null,
+  basePath : null,
+  format   : 'json',
 
+  raw: function( options ) {
+    if ( 'string' === typeof options ) options = { url: options };
+    if ( !options.url ) return Promise.reject('No url given');
+    options.method = (options.method || 'get').toUpperCase();
+    var parsed = url.parse(options.url);
+    parsed.href = parsed.path = parsed.search = null;
+    parsed.hostname = parsed.hostname || api.hostname;
+    parsed.port = parsed.port || api.port;
+    if ( parsed.pathname.charAt(0) !== '/' && api.basePath ) {
+      if ( api.basePath.slice(-1) !== '/' ) api.basePath += '/';
+      parsed.pathname = api.basePath + parsed.pathname;
+    }
+    options.url = parsed.format();
+    return new Promise(function(resolve,reject) {
+      ajax(options, function( err, res, body ) {
+        if ( err ) return reject(err);
+        var output = {
+          status : res.statusCode,
+          text   : body,
+          data   : null
+        };
+        try {
+          output.data = JSON.parse(output.text);
+        } catch(e) {
+          output.data = null;
+        }
+        resolve(output);
+      });
+
+    });
+  },
+
+  // Fetch the available versions from the server
+  // The only non-versioned call, fixed throughout the ages
+  versions : function () {
+    return api.raw('/api/versions.json');
+    // return api
+    //   .raw('GET', '/api/versions.json')
+    //   .then(function (response) {
+    //     if (response.responseData.indexOf('v' + api.supported) < 0) {
+    //       throw "The loaded API client is not supported anymore";
+    //     }
+    //     api.baseuri = '/api/v' + api.supported + '/';
+    //     return response.responseData;
+    //   });
+  },
 };
 
 
 function oldVersion(global) {
-
-  // Simple fallback on failure
-  // https://gist.github.com/unscriptable/814052
-  var Promise = global.Promise || function MiniPromise(cb) {
-    var q = [], v, u, ok, complete = function (m, r) {
-      if (q) {
-        var i = -1, l = q;
-        ok    = !m;
-        v     = r;
-        q     = null;
-        while (++i < l.length) l[i][m](v);
-      }
-    };
-
-    cb(complete.bind(u, 0), complete.bind(u, 1));
-
-    this.then  = then;
-    this.catch = then.bind(u, u);
-
-    function then(success, error) {
-      return new MiniPromise(function (resolve, reject) {
-        if (q) q.push([done.bind(u, success), done.bind(u, error)]);
-        else done(ok ? success : error);
-
-        function done(cb) {
-          try {
-            let val = cb ? cb(v) : u;
-            if (val && val.then) val.then(resolve, reject);
-            else (cb || ok ? resolve : reject)(val);
-          } catch (e) { reject(e); }
-        }
-      });
-    }
-  };
 
   // Convert object to url encoded data
   function serializeObject(obj, prefix) {
@@ -53,67 +71,6 @@ function oldVersion(global) {
       }
     }
     return str.join("&");
-  }
-
-  // Perform ajax calls
-  function ajax(uri, options) {
-    var factories = [
-      function () { return new XMLHttpRequest(); },
-      function () { return new ActiveXObject("Msxml2.XMLHTTP"); },
-      function () { return new ActiveXObject("Msxml3.XMLHTTP"); },
-      function () { return new ActiveXObject("Microsoft.XMLHTTP"); }
-    ];
-
-    function httpObject() {
-      let xmlhttp = false;
-      factories.forEach(function (factory) {
-        try {
-          xmlhttp = xmlhttp || factory();
-        } catch (e) {
-        }
-      });
-      return xmlhttp;
-    }
-
-    return new Promise(function (resolve, reject) {
-      options        = options || {};
-      options.method = (options.method || 'GET').toUpperCase();
-      options.data   = options.data || {};
-      var req        = httpObject();
-      if (!req) return reject('No supported xmlhttp factory available');
-      if (Object.keys(options.data).length) {
-        var serializedData = serializeObject(options.data);
-        switch (options.method) {
-          case 'GET':
-            uri += ((uri.indexOf('?') === -1) ? '?' : '&') + serializedData;
-            options.data = {};
-            break;
-          case 'POST':
-            req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-            break;
-        }
-      }
-
-      req.open(options.method, uri, true);
-      req.onreadystatechange = function () {
-        if (req.readyState !== 4) return;
-        var output = {
-          responseText : req.responseText,
-          responseType : req.responseType,
-          status       : req.status,
-          statusText   : req.statusText
-        };
-
-        try {
-          output.responseData = JSON.parse(req.responseText);
-        } catch (e) {
-          output.parseError = e;
-        }
-
-        resolve(output);
-      };
-      req.send(options.data);
-    });
   }
 
   // A list of root keys that should not
@@ -153,20 +110,6 @@ function oldVersion(global) {
         method : method || 'GET',
         data   : data || {}
       });
-    },
-
-    // Fetch the available versions from the server
-    // The only non-versioned call, fixed throughout the ages
-    versions : function () {
-      return api
-        .raw('GET', '/api/versions.json')
-        .then(function (response) {
-          if (response.responseData.indexOf('v' + api.supported) < 0) {
-            throw "The loaded API client is not supported anymore";
-          }
-          api.baseuri = '/api/v' + api.supported + '/';
-          return response.responseData;
-        });
     },
 
     // Fetch the manifest

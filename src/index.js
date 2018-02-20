@@ -1,11 +1,10 @@
-(function (factory) {
-  var result = factory();
+(function (apiObject) {
   // Register to AMD or attach to the window
   if (('function' === typeof define) && define.amd) {
     define([], function () {
-      return result;
+      return apiObject;
     });
   } else if ('undefined' !== typeof window) {
-    window.trackthisApi = result;
+    window.trackthisApi = apiObject;
   }
 })(require('./factory'));

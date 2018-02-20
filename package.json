@@ -5,7 +5,7 @@
   "main": "src/node.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "cp readme.md docs/readme.md && cp src/factory.js lib/node.js && node_modules/.bin/browserify src/index.js -o lib/browser.js && node_modules/.bin/uglifyjs lib/browser.js -o lib/browser.min.js"
+    "build": "cp readme.md docs/readme.md && cp src/factory.js lib/node.js && node_modules/.bin/browserify src/index.js -o lib/browser.js && node_modules/.bin/uglifyjs lib/browser.js -o lib/browser.min.js && cp lib/browser.js docs/assets/client.js"
   },
   "repository": {
     "type": "git",
@@ -14,7 +14,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "ajax-request": "^1.2.3"
+    "ajax-request": "^1.2.3",
+    "bluebird": "^3.5.1"
   },
   "devDependencies": {
     "browserify": "^16.1.0",
