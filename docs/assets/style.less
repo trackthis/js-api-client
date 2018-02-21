@@ -2,10 +2,10 @@
 
 /* based on markdown7 from https://github.com/jasonm23/markdown-css-themes */
 
-body {
+body, .content {
   font-family      : Roboto, sans-serif;
   line-height      : 1.6;
-  padding          : 3em 1em;
+  padding          : 4em 1em 0 1em;
   background-color : white;
 
   > *:first-child {
@@ -366,7 +366,7 @@ sup {
 }
 
 @media screen and (min-width : 914px) {
-  body {
+  body, .content {
     width  : 854px;
     margin : 0 auto;
   }
@@ -388,9 +388,35 @@ header {
   left       : 0;
   right      : 0;
   top        : 0;
-  padding    : 0.5em;
-  color      : white;
+  color      : #FFF;
   background : #5AF;
+
+  -webkit-box-shadow : 0 1pt 2pt rgba(0,0,0,0.5);
+  -moz-box-shadow    : 0 1pt 2pt rgba(0,0,0,0.5);
+  box-shadow         : 0 1pt 2pt rgba(0,0,0,0.5);
+
+  .content {
+    background: transparent;
+    padding: 0 1em;
+  }
+}
+nav a {
+  display: inline-block;
+  text-decoration: none;
+  border-left: 1px solid rgba(255,255,255,0.2);
+  padding: 0.5em;
+  color: inherit;
+
+  &:last-child {
+    border-right: 1px solid rgba(255,255,255,0.2);
+  }
+  &:hover {
+    background: rgba(255,255,255,0.2);
+    border-color: transparent;
+  }
+  &:active {
+    background: rgba(0,0,0,0.2);
+  }
 }
 
 .view {

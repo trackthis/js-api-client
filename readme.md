@@ -2,42 +2,9 @@
 
 This API client is the default provided for connecting with trackthis. The client contains everything needed to make full use of the TrackThis API.
 
-## Installation
+## Documentation
 
-```sh
-npm install --save trackthis-api-client
-```
+Go to [https://trackthis.github.io/js-api-client](https://trackthis.github.io/js-api-client) for the full documentation.
 
-## Loading
 
-#### Browser
-
-```html
-<!-- Self-hosted -->
-<!-- uses define (AMD) or exports window.trackthisApi -->
-<script src="path/to/lib/browser.min.js"></script>
-
-<!-- Rawgit cdn -->
-<!-- uses define (AMD) or exports window.trackthisApi -->
-<script src="https://cdn.rawgit.com/trackthis/js-api-client/<version>/lib/browser.min.js"></script>
-```
-```js
-// RequireJS
-// uses define
-require.config({
-  paths: {
-    // ...
-    'trackthis-api-client': 'path/to/browser.min.js'
-    // ...
-  }
-})
-```
-
-#### NodeJS / Browserify
-
-```js
-var trackthisApi = require('trackthis-api-client');
-```
-
-## Usage
 
