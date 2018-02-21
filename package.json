@@ -5,7 +5,7 @@
   "main": "src/node.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "cp readme.md docs/readme.md && cp src/index.js lib/node.js && node_modules/.bin/browserify src/wrapper.js -o lib/browser.js && node_modules/.bin/uglifyjs lib/browser.js -o lib/browser.min.js && cp lib/browser.js docs/assets/client.js"
+    "build": "cp src/index.js lib/node.js && node_modules/.bin/browserify src/wrapper.js -o lib/browser.js && node_modules/.bin/uglifyjs lib/browser.js -o lib/browser.min.js && cp lib/browser.js docs/assets/client.js"
   },
   "repository": {
     "type": "git",
