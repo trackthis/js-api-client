@@ -99,9 +99,7 @@ var parameters = {
   account      : null, // A string or list of usernames of known accounts or which you want to use
   clientId     : null, // The ID of your application
   callback     : null, // The callback url of your application
-  scopes       : [     // A list of permissions you want to have
-    
-  ]
+  scopes       : [],   // A list of permissions you want to have
 };
 
 trackthisApi.getToken( parameters )

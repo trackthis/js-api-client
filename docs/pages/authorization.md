@@ -1,4 +1,4 @@
-# Authorizations
+# Authorization
 
 So what it this thing with tokens, scopes and secrets?
 
