@@ -107,6 +107,13 @@
               resolve();
             });
 
+            // Fix lazy-loaded anchor targets
+            queue.push(function(d,resolve) {
+              document.querySelectorAll('nav a').forEach(function(el) {
+                if ( el.hash === document.location.hash ) el.click();
+              });
+            });
+
             // Start the queue
             cbq(queue);
           })();
