@@ -15221,5 +15221,6 @@ function oldVersion(global) {
   } else if ('undefined' !== typeof window) {
     window.trackthisApi = apiObject;
   }
-})(require('./factory'));
-},{"./factory":47}]},{},[48]);
+})(require('./index'));
+
+},{"./index":47}]},{},[48]);
