@@ -12,6 +12,8 @@ To install via npm, run:
 npm install --save trackthis-api-client
 ```
 
+Alternatively you can [download](#download) the most recent version and host it yourself or use the rawgit cdn.
+
 ## Load
 
 The trackthis api client can be used in node.js and in the browser. The library must be loaded and instantiated. When creating an instance, one can optionally provide configuration options as described later in this page.
