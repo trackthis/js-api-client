@@ -15107,6 +15107,9 @@ var api = module.exports = {
       if ( api.basePath.slice(-1) !== '/' ) api.basePath += '/';
       parsed.pathname = api.basePath + parsed.pathname;
     }
+    if ( parsed.pathname.slice(-(api.format.length)) !== api.format.length ) {
+      parsed.pathname += '.' + api.format;
+    }
     options.url = parsed.format();
     return new Promise(function(resolve,reject) {
       ajax(options, function( err, res, body ) {
@@ -15130,16 +15133,7 @@ var api = module.exports = {
   // Fetch the available versions from the server
   // The only non-versioned call, fixed throughout the ages
   versions : function () {
-    return api.raw('/api/versions.json');
-    // return api
-    //   .raw('GET', '/api/versions.json')
-    //   .then(function (response) {
-    //     if (response.responseData.indexOf('v' + api.supported) < 0) {
-    //       throw "The loaded API client is not supported anymore";
-    //     }
-    //     api.baseuri = '/api/v' + api.supported + '/';
-    //     return response.responseData;
-    //   });
+    return api.raw('/api/versions');
   },
 };
 
