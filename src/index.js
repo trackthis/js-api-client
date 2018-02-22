@@ -2,6 +2,11 @@ var ajax    = require('ajax-request'),
     Promise = require('bluebird'),
     url     = require('url');
 
+var noop           = function(){},
+    hiddenSettings = {
+      token: null
+    };
+
 var api = module.exports = {
   protocol : 'https',
   hostname : null,
@@ -16,6 +21,11 @@ var api = module.exports = {
     https: {
       defaultPort: 80
     }
+  },
+
+  setToken: function( token ) {
+    hiddenSettings.token = token;
+    return api;
   },
 
   /**
@@ -40,6 +50,9 @@ var api = module.exports = {
     api.hostname = options.hostname || parsed.hostname || 'trackthis.nl';
     api.port     = options.port     || parsed.port     || ( api.protocolHandlers[api.protocol] && api.protocolHandlers[api.protocol].defaultPort ) || 8080;
     api.basePath = options.basePath || parsed.pathname || '/api/';
+    return new Promise(function(resolve, reject) {
+
+    }).then(('function'===(typeof callback))?callback:noop)
   },
 
   /**
@@ -53,10 +66,10 @@ var api = module.exports = {
     if ( 'string' === typeof options ) options = { url: options };
     if ( !options.url ) return Promise.reject('No url given');
     options.method = (options.method || 'get').toUpperCase();
-    var parsed = url.parse(options.url);
-    parsed.href = parsed.path = parsed.search = null;
-    parsed.hostname = parsed.hostname || api.hostname;
-    parsed.port = parsed.port || api.port;
+    var parsed      = url.parse(options.url);
+    parsed.href     = parsed.path = parsed.search = null;
+    parsed.hostname = parsed.hostname || api.hostname || (document && document.location && document.location.hostname);
+    parsed.port     = parsed.port     || api.port     || (document && document.location && document.location.port    );
     if ( parsed.pathname.charAt(0) !== '/' && api.basePath ) {
       if ( api.basePath.slice(-1) !== '/' ) api.basePath += '/';
       parsed.pathname = api.basePath + parsed.pathname;
