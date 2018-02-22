@@ -41,14 +41,21 @@ hr {
   margin           : 0.5rem 0;
 }
 code {
-  border: 1px solid average(@color-text,@color-background);
+  .padded(0.5);
+  border                : 1px solid average(@color-text, @color-background);
   -webkit-border-radius : 0.25rem;
   -moz-border-radius    : 0.25rem;
   border-radius         : 0.25rem;
+  background            : darken(@color-background, 3%);
+  code {
+    &, &.hljs {
+      background : transparent;
+    }
+  }
 }
 pre, code {
   &, * {
-    font-family: "DejaVu Sans Mono", monospace !important;
+    font-family : "DejaVu Sans Mono", monospace !important;
   }
 }
 
@@ -84,6 +91,10 @@ header {
     background : transparent;
     padding    : 0;
   }
+}
+
+a {
+  color: @color-theme;
 }
 
 nav a {
