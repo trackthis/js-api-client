@@ -81,9 +81,9 @@ require(['trackthis-api-client'], function(trackthisApi) {
 
 ## Use
 
-Once the api client has connected successfully, you can start using it like you would with any other platform specific api.
+Apart from the functions which set stuff like the tokens, client id & callback url, all functions return promises & have an optional callback parameter.
 
-Setting global options:
+List of functions which do not return a promise
 
 ```js
 trackthisApi.setToken("super-secret-token-string");          // Token to be used in authenticated calls
@@ -91,3 +91,4 @@ trackthisApi.setRefreshToken("super-secret-refresh-token");  // Refresh token to
 trackthisApi.setClientId("the-id-of-your-app");              // Id of your application to identify itself
 trackthisApi.setCallback("callback-url-of-your-app");        // The callback url of your application (must match the registered url)
 ```
+

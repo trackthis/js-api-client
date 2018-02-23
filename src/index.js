@@ -4,7 +4,7 @@ var ajax    = require('ajax-request'),
 
 /* "global" variables we'll use */
 
-var noop              = function(){},
+var noop              = function(data){return data;},
     supportedVersions = [ 1 ],
     chosenVersion     = null,
     rawApi            = {},
@@ -259,7 +259,7 @@ var api = module.exports = {
     if ( 'function' === typeof options ) { callback = options ; options = {} ; }
     if ( 'string' === typeof options ) options = { remote: options };
     options = options || {};
-    if ( 'object' !== typeof options ) throw "Given options was neither a string or an object";
+    if ( 'object' !== typeof options ) throw "Given options was neither a string, an object or undefined";
     options.remote = options.remote || 'https://trackthis.nl/api';
     var parsed = url.parse( options.remote );
     api.protocol = options.protocol || parsed.protocol || 'http';
@@ -282,7 +282,8 @@ var api = module.exports = {
           }
           resolve();
         })
-    }).then(('function'===(typeof callback))?callback:noop);
+    })
+      .then(('function'===(typeof callback))?callback:noop);
   },
 
   /**
@@ -290,11 +291,12 @@ var api = module.exports = {
    *
    * @returns {Promise}
    */
-  versions : function () {
+  versions : function (callback) {
     return checkTransport()
       .then(function() {
         return api.transport('versions');
       })
+      .then(('function'===(typeof callback))?callback:noop);
   },
 
   /**
@@ -302,7 +304,7 @@ var api = module.exports = {
    *
    * @returns {Promise}
    */
-  manifest : function() {
+  manifest : function(callback) {
     return checkTransport()
       .then(function() {
         return api.transport('manifest');
@@ -337,5 +339,6 @@ var api = module.exports = {
         })(response.data, rawApi, []);
         return response;
       })
+      .then(('function'===(typeof callback))?callback:noop);
   }
 };
