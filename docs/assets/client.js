@@ -15247,7 +15247,7 @@ var api = module.exports = {
    * Ordinarily, the client itself handles this
    *
    * @param {string} token
-   * @returns api
+   * @returns {object} api
    */
   setToken: function( token ) {
     hiddenSettings.token = token;
@@ -15261,7 +15261,7 @@ var api = module.exports = {
    * Ordinarily, the client itself handles this
    *
    * @param {string} refreshToken
-   * @returns api
+   * @returns {object} api
    */
   setRefreshToken: function( refreshToken ) {
     hiddenSettings.refreshToken = refreshToken;
@@ -15283,7 +15283,7 @@ var api = module.exports = {
    * Sets the callback url to be included in calls which require a callback
    *
    * @param {string} url
-   * @returns api
+   * @returns {object} api
    */
   setCallback: function( url ) {
     hiddenSettings.callback = url;
@@ -15299,7 +15299,7 @@ var api = module.exports = {
    * @param {void | string   | object} options
    * @param {void | function }         callback
    *
-   * @return Promise
+   * @return {Promise}
    */
   connect: function( options, callback ) {
     if ( 'function' === typeof options ) { callback = options ; options = {} ; }
