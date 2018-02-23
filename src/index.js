@@ -11,7 +11,7 @@ var noop              = function(data){return data;},
     skipManifestKeys  = [
       'baseuri','formats'
     ],
-    hiddenSettings    = {
+    settings          = {
       callback     : null,
       clientId     : null,
       token        : null,
@@ -74,6 +74,49 @@ function checkTransport() {
 }
 
 /**
+ * Loads the manifest from the remote and builds/updates the internal raw api
+ *
+ * @returns {Promise}
+ */
+function fetchManifest(callback) {
+  return checkTransport()
+    .then(function() {
+      return api.transport('manifest');
+    })
+    .then(function(response) {
+      if ( 'object' !== typeof response.data ) {
+        throw 'Manifest response is not valid';
+      }
+      (function processManifest(data, apiref, path) {
+        Object.keys(data)
+              .forEach(function(key) {
+                if (skipManifestKeys.indexOf(key)>=0) return;
+                if('object'!==(typeof data[key])) return;
+                if ( data[key].url ) {
+                  Object.keys(data[key])
+                        .forEach(function(method) {
+                          if ( method === 'url' || method === 'description' ) return;
+                          apiref[method.toLowerCase() + key.slice(0, 1).toUpperCase() + key.slice(1)] = function (options) {
+                            return checkTransport()
+                              .then(function() {
+                                return api.transport(Object.assign({
+                                  method : method.toUpperCase(),
+                                  name   : path.join('.')
+                                },options))
+                              });
+                          };
+                        });
+                } else {
+                  processManifest(data[key], apiref[key]=apiref[key]||{}, path.concat([key]));
+                }
+              });
+      })(response.data, rawApi, []);
+      return response;
+    })
+    .then(('function'===(typeof callback))?callback:noop);
+}
+
+/**
  * Ensure we have called the manifest at least once
  *
  * The manifest is a special call which builds the raw api calls
@@ -84,7 +127,7 @@ function checkTransport() {
 function ensureManifest() {
   return new Promise(function(resolve) {
     if ( Object.keys(rawApi).length ) return resolve();
-    resolve(api.manifest);
+    fetchManifest(resolve);
   }).then(noop);
 }
 
@@ -298,47 +341,4 @@ var api = module.exports = {
       })
       .then(('function'===(typeof callback))?callback:noop);
   },
-
-  /**
-   * Loads the manifest from the remote and builds/updates the internal raw api
-   *
-   * @returns {Promise}
-   */
-  manifest : function(callback) {
-    return checkTransport()
-      .then(function() {
-        return api.transport('manifest');
-      })
-      .then(function(response) {
-        if ( 'object' !== typeof response.data ) {
-          throw 'Manifest response is not valid';
-        }
-        (function processManifest(data, apiref, path) {
-          Object.keys(data)
-                .forEach(function(key) {
-                  if (skipManifestKeys.indexOf(key)>=0) return;
-                  if('object'!==(typeof data[key])) return;
-                  if ( data[key].url ) {
-                    Object.keys(data[key])
-                      .forEach(function(method) {
-                        if ( method === 'url' || method === 'description' ) return;
-                        apiref[method.toLowerCase() + key.slice(0, 1).toUpperCase() + key.slice(1)] = function (options) {
-                          return checkTransport()
-                            .then(function() {
-                              return api.transport(Object.assign({
-                                method : method.toUpperCase(),
-                                name   : path.join('.')
-                              },options))
-                            });
-                        };
-                      });
-                  } else {
-                    processManifest(data[key], apiref[key]=apiref[key]||{}, path.concat([key]));
-                  }
-                });
-        })(response.data, rawApi, []);
-        return response;
-      })
-      .then(('function'===(typeof callback))?callback:noop);
-  }
 };
