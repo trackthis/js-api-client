@@ -15048,6 +15048,8 @@ var ajax    = require('ajax-request'),
     Promise = require('bluebird'),
     url     = require('url');
 
+/* "global" variables we'll use */
+
 var noop              = function(){},
     supportedVersions = [ 1 ],
     chosenVersion     = null,
@@ -15062,14 +15064,51 @@ var noop              = function(){},
       refreshToken : null
     };
 
-function intersect( left, right ) {
-  return left
-    .slice()
-    .filter(function(entry) {
-      return right.indexOf(entry) >= 0;
-    });
+/* Helper functions */
+
+/**
+ * Intersect 2 or more arrays
+ *
+ * Returns a new array representing the intersection of arrays
+ * You should not assume that keys are preserved
+
+ * @param   {...array} arr
+ * @returns {array}
+ */
+function intersect(arr) {
+
+  // Convert the arguments special to an array
+  var args = arguments;
+  args = Object.keys(args).map(function(key) {
+    return args[key];
+  });
+  if ( !args.length ) return [];
+
+  // Fetch the first argument & make sure it's an array
+  var intermediate, output = args.shift();
+  if (!Array.isArray(output)) return [];
+  output = output.slice();
+
+  // Intersect it with all the other arguments
+  // Also makes sure only arrays are used
+  while ( intermediate = args.shift() ) {
+    if (!Array.isArray(intermediate)) continue;
+    output = output.filter(function(entry) {
+      return intermediate.indexOf(entry) >= 0;
+    })
+  }
+
+  return output;
 }
 
+/**
+ * Check if we have a transport adapter registered
+ *
+ * Returns a promise which resolves if we have a transport
+ * Having a transport means we're supposed to be connected to an endpoint.
+ *
+ * @return {Promise}
+ */
 function checkTransport() {
   return new Promise(function(resolve,reject) {
     if ( 'function' === typeof api.transport ) {
@@ -15080,6 +15119,14 @@ function checkTransport() {
   });
 }
 
+/**
+ * Ensure we have called the manifest at least once
+ *
+ * The manifest is a special call which builds the raw api calls
+ * Raw api calls are used inside the simplified API that we export
+ *
+ * @returns {Promise}
+ */
 function ensureManifest() {
   return new Promise(function(resolve) {
     if ( Object.keys(rawApi).length ) return resolve();
@@ -15087,15 +15134,58 @@ function ensureManifest() {
   }).then(noop);
 }
 
+/**
+ * Serialize (almost) any object into url-encoding
+ *
+ * Returns a url-encoded object, usable as a query for a GET or POST request
+ *
+ * @param   {object} obj
+ * @param   {string} prefix
+ * @returns {string}
+ */
+function serializeObject(obj, prefix) {
+  var str = [], p;
+  for (p in obj) {
+    if (obj.hasOwnProperty(p)) {
+      var k = prefix ? prefix + "[" + p + "]" : p, v = obj[p];
+      str.push((v !== null && typeof v === "object") ?
+               serializeObject(v, k) :
+               encodeURIComponent(k) + "=" + encodeURIComponent(v));
+    }
+  }
+  return str.join("&");
+}
+
+/* The actual exported api object */
+
 var api = module.exports = {
+
+  /**
+   * Basic settings for our transport on how to connect/talk to the remote
+   */
   protocol  : 'https',
   hostname  : null,
   port      : null,
   basePath  : null,
   format    : 'json',
+
+  /**
+   * The actual transport (or where it will be stored)
+   */
   transport : null,
 
+  /**
+   * A named list of protocol handlers
+   *
+   * Each contains a default port (we're networking) and a transport which knows how to talk to the remote endpoint.
+   */
   protocolHandlers: {
+
+    /**
+     * HTTP protocol handler
+     *
+     * The ajax-request supports both HTTP and HTTPS, so simply redirect to the HTTPS handler
+     */
     http: {
       defaultPort: 80,
       transport : function( options ) {
@@ -15107,6 +15197,12 @@ var api = module.exports = {
         return api.protocolHandlers.https.transport(options);
       }
     },
+
+    /**
+     * HTTPS protocol handler
+     *
+     * Converts our raw named calls into AJAX request based on settings like the hostname, port & basePath
+     */
     https: {
       defaultPort: 443,
       transport  : function( options ) {
@@ -15176,7 +15272,7 @@ var api = module.exports = {
    * Sets the client id used for identifying the application to the server
    *
    * @param {string} id
-   * @returns api
+   * @returns {object} api
    */
   setClientId: function( id ) {
     hiddenSettings.clientId = id;
@@ -15195,7 +15291,7 @@ var api = module.exports = {
   },
 
   /**
-   * Connect the api client to the remote
+   * Connect the api client to the (default) remote
    *
    * Optionally takes a callback function for when it's ready
    * Returns a promise that will resolve when connected or reject on a failure to connect
@@ -15238,7 +15334,7 @@ var api = module.exports = {
   /**
    * Fetch the available versions from the server
    *
-   * @returns Promise
+   * @returns {Promise}
    */
   versions : function () {
     return checkTransport()
@@ -15247,6 +15343,11 @@ var api = module.exports = {
       })
   },
 
+  /**
+   * Loads the manifest from the remote and builds/updates the internal raw api
+   *
+   * @returns {Promise}
+   */
   manifest : function() {
     return checkTransport()
       .then(function() {
@@ -15282,73 +15383,8 @@ var api = module.exports = {
         })(response.data, rawApi, []);
         return response;
       })
-  },
-
-  user: {
-    me: function () {
-      return checkTransport()
-        .then(ensureManifest)
-        .then(function() {
-          // do stuff
-        })
-    }
   }
 };
-
-
-function oldVersion(global) {
-
-  // Convert object to url encoded data
-  function serializeObject(obj, prefix) {
-    var str = [], p;
-    for (p in obj) {
-      if (obj.hasOwnProperty(p)) {
-        var k = prefix ? prefix + "[" + p + "]" : p, v = obj[p];
-        str.push((v !== null && typeof v === "object") ?
-                 serializeObject(v, k) :
-                 encodeURIComponent(k) + "=" + encodeURIComponent(v));
-      }
-    }
-    return str.join("&");
-  }
-
-  // A list of root keys that should not
-  //   be updated by a call to the manifest
-  var fixedElements = [
-    'baseuri',   // May not be changed in this client, fetched through the 'versions' call
-    'format',    // Let's not have the server instruct us which format to use
-    'formats',   // We know perfectly fine which formats we support
-    'manifest',  // This function is complex & constructs the rest of the API
-    'supported', // We know which API version we support, the server doesn't
-    'raw',       // Function for programmer efficiency, not server automation
-    'versions'   // The only fixed call in the whole API, let's not overwrite this
-  ];
-
-  // Our base API
-  var api = {
-
-    serialize : serializeObject, // Make this function public
-
-    // Fetch the manifest
-    // Updates the API calls
-    manifest : function () {
-      return api
-        .raw('GET', 'manifest')
-        .then(function (response) {
-
-          // Make sure it was data
-          if (!response.responseData) {
-            throw response.parseError;
-          }
-
-          // Return the data we used
-          return response.responseData;
-        });
-    }
-  };
-
-  return api;
-}
 
 },{"ajax-request":1,"bluebird":3,"url":39}],48:[function(require,module,exports){
 (function (apiObject) {
