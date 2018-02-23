@@ -33,6 +33,13 @@ function checkTransport() {
   });
 }
 
+function ensureManifest() {
+  return new Promise(function(resolve) {
+    if ( Object.keys(rawApi).length ) return resolve();
+    resolve(api.manifest);
+  }).then(noop);
+}
+
 var api = module.exports = {
   protocol  : 'https',
   hostname  : null,
@@ -211,6 +218,16 @@ var api = module.exports = {
         })(response.data, rawApi, []);
         return response;
       })
+  },
+
+  user: {
+    me: function () {
+      return checkTransport()
+        .then(ensureManifest)
+        .then(function() {
+          // do stuff
+        })
+    }
   }
 };
 
