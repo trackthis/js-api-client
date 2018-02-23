@@ -86,26 +86,8 @@ Once the api client has connected successfully, you can start using it like you 
 Setting global options:
 
 ```js
-trackthisApi.setToken("super-secret-token-string");   // Token to be used in authenticated calls
-trackthisApi.setClientId("the-id-of-your-app");       // Id of your application to identify itself
-trackthisApi.setCallback("callback-url-of-your-app"); // The callback url of your application (must match the registered url)
-```
-
-Fetching a token to use for authenticated calls:
-
-```js
-
-// The displayed parameters here are the defaults
-var parameters = {
-  allowRedirect: true, // Show the trackthis login and/or the authorization page to the user if needed
-  account      : null, // A string or list of usernames of known accounts or which you want to use
-  clientId     : null, // The ID of your application
-  callback     : null, // The callback url of your application
-  scopes       : [],   // A list of permissions you want to have
-};
-
-trackthisApi.getToken( parameters )
-  .then(function( token ) {
-    
-  })
+trackthisApi.setToken("super-secret-token-string");          // Token to be used in authenticated calls
+trackthisApi.setRefreshToken("super-secret-refresh-token");  // Refresh token to update the actual API token
+trackthisApi.setClientId("the-id-of-your-app");              // Id of your application to identify itself
+trackthisApi.setCallback("callback-url-of-your-app");        // The callback url of your application (must match the registered url)
 ```

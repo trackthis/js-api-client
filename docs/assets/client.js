@@ -15056,9 +15056,10 @@ var noop              = function(){},
       'baseuri','formats'
     ],
     hiddenSettings    = {
-      callback : null,
-      clientId : null,
-      token    : null
+      callback     : null,
+      clientId     : null,
+      token        : null,
+      refreshToken : null
     };
 
 function intersect( left, right ) {
@@ -15146,11 +15147,28 @@ var api = module.exports = {
   /**
    * Sets the token used for identifying the client to the server
    *
+   * Only use this if you know to use a certain token
+   * Ordinarily, the client itself handles this
+   *
    * @param {string} token
    * @returns api
    */
   setToken: function( token ) {
     hiddenSettings.token = token;
+    return api;
+  },
+
+  /**
+   * Sets the refresh token used for updating the API token
+   *
+   * Only use this if you know to use a certain token
+   * Ordinarily, the client itself handles this
+   *
+   * @param {string} refreshToken
+   * @returns api
+   */
+  setRefreshToken: function( refreshToken ) {
+    hiddenSettings.refreshToken = refreshToken;
     return api;
   },
 
@@ -15331,6 +15349,7 @@ function oldVersion(global) {
 
   return api;
 }
+
 },{"ajax-request":1,"bluebird":3,"url":39}],48:[function(require,module,exports){
 (function (apiObject) {
   // Register to AMD or attach to the window
