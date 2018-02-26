@@ -7,6 +7,7 @@ var ajax    = require('ajax-request'),
 var noop              = function(data){return data;},
     supportedVersions = [ 1 ],
     chosenVersion     = null,
+    transport         = null,
     rawApi            = {},
     skipManifestKeys  = [
       'baseuri','formats'
@@ -16,6 +17,73 @@ var noop              = function(data){return data;},
       clientId     : null,
       token        : null,
       refreshToken : null
+    },
+
+
+    /**
+     * A named list of protocol handlers
+     *
+     * Each contains a default port (we're networking) and a transport which knows how to talk to the remote endpoint.
+     */
+    protocolHandlers = {
+
+      /**
+       * HTTP protocol handler
+       *
+       * The ajax-request supports both HTTP and HTTPS, so simply redirect to the HTTPS handler
+       */
+      http: {
+        defaultPort: 80,
+        transport : function( options ) {
+          if ( 'string' === typeof options ) options = { name: options };
+          options = options || {};
+          if ( !options.name ) return Promise.reject('No name given');
+          options.protocol = 'http';
+          options.port     = options.port || api.port || protocolHandlers.http.defaultPort;
+          return protocolHandlers.https.transport(options);
+        }
+      },
+
+      /**
+       * HTTPS protocol handler
+       *
+       * Converts our raw named calls into AJAX request based on settings like the hostname, port & basePath
+       */
+      https: {
+        defaultPort: 443,
+        transport  : function( options ) {
+          if ( 'string' === typeof options ) options = { name: options };
+          options = options || {};
+          if ( !options.name ) return Promise.reject('No name given');
+          api.basePath = api.basePath || '/';
+          if ( api.basePath.slice(-1) !== '/' ) api.basePath += '/';
+          var parsed = options.url && url.parse(options.url) || {};
+          options.name     = options.name.replace(/\./g,'/');
+          options.method   = (options.method || 'get').toUpperCase();
+          options.protocol = options.protocol || parsed.protocol || api.protocol || (document && document.location && document.location.protocol);
+          if ( options.protocol.slice(-1) !== ':' ) options.protocol += ':';
+          options.hostname = options.hostname || parsed.hostname || api.hostname || (document && document.location && document.location.hostname);
+          options.port     = options.port     || parsed.port     || api.port     || (document && document.location && document.location.port    );
+          options.pathname = options.pathname || ( api.basePath + ((options.name==='versions')?'':('v'+chosenVersion+'/')) + options.name + '.json' );
+          options.url      = url.format(options);
+          return new Promise(function(resolve,reject) {
+            ajax(options, function(err, res, body) {
+              if ( err ) return reject(err);
+              var output = {
+                status : res.statusCode,
+                text   : body,
+                data   : null
+              };
+              try {
+                output.data = JSON.parse(output.text);
+              } catch(e) {
+                output.data = null;
+              }
+              resolve(output);
+            });
+          });
+        }
+      }
     };
 
 /* Helper functions */
@@ -65,7 +133,7 @@ function intersect(arr) {
  */
 function checkTransport() {
   return new Promise(function(resolve,reject) {
-    if ( 'function' === typeof api.transport ) {
+    if ( 'function' === typeof transport ) {
       resolve();
     } else {
       reject('The api is not connected to the remote yet');
@@ -81,7 +149,7 @@ function checkTransport() {
 function fetchManifest(callback) {
   return checkTransport()
     .then(function() {
-      return api.transport('manifest');
+      return transport('manifest');
     })
     .then(function(response) {
       if ( 'object' !== typeof response.data ) {
@@ -99,7 +167,7 @@ function fetchManifest(callback) {
                           apiref[method.toLowerCase() + key.slice(0, 1).toUpperCase() + key.slice(1)] = function (options) {
                             return checkTransport()
                               .then(function() {
-                                return api.transport(Object.assign({
+                                return transport(Object.assign({
                                   method : method.toUpperCase(),
                                   name   : path.join('.')
                                 },options))
@@ -164,78 +232,6 @@ var api = module.exports = {
   hostname  : null,
   port      : null,
   basePath  : null,
-  format    : 'json',
-
-  /**
-   * The actual transport (or where it will be stored)
-   */
-  transport : null,
-
-  /**
-   * A named list of protocol handlers
-   *
-   * Each contains a default port (we're networking) and a transport which knows how to talk to the remote endpoint.
-   */
-  protocolHandlers: {
-
-    /**
-     * HTTP protocol handler
-     *
-     * The ajax-request supports both HTTP and HTTPS, so simply redirect to the HTTPS handler
-     */
-    http: {
-      defaultPort: 80,
-      transport : function( options ) {
-        if ( 'string' === typeof options ) options = { name: options };
-        options = options || {};
-        if ( !options.name ) return Promise.reject('No name given');
-        options.protocol = 'http';
-        options.port     = options.port || api.port || api.protocolHandlers.http.defaultPort;
-        return api.protocolHandlers.https.transport(options);
-      }
-    },
-
-    /**
-     * HTTPS protocol handler
-     *
-     * Converts our raw named calls into AJAX request based on settings like the hostname, port & basePath
-     */
-    https: {
-      defaultPort: 443,
-      transport  : function( options ) {
-        if ( 'string' === typeof options ) options = { name: options };
-        options = options || {};
-        if ( !options.name ) return Promise.reject('No name given');
-        api.basePath = api.basePath || '/';
-        if ( api.basePath.slice(-1) !== '/' ) api.basePath += '/';
-        var parsed = options.url && url.parse(options.url) || {};
-        options.name     = options.name.replace(/\./g,'/');
-        options.method   = (options.method || 'get').toUpperCase();
-        options.protocol = options.protocol || parsed.protocol || api.protocol || (document && document.location && document.location.protocol);
-        if ( options.protocol.slice(-1) !== ':' ) options.protocol += ':';
-        options.hostname = options.hostname || parsed.hostname || api.hostname || (document && document.location && document.location.hostname);
-        options.port     = options.port     || parsed.port     || api.port     || (document && document.location && document.location.port    );
-        options.pathname = options.pathname || ( api.basePath + ((options.name==='versions')?'':('v'+chosenVersion+'/')) + options.name + '.' + api.format );
-        options.url      = url.format(options);
-        return new Promise(function(resolve,reject) {
-          ajax(options, function(err, res, body) {
-            if ( err ) return reject(err);
-            var output = {
-              status : res.statusCode,
-              text   : body,
-              data   : null
-            };
-            try {
-              output.data = JSON.parse(output.text);
-            } catch(e) {
-              output.data = null;
-            }
-            resolve(output);
-          });
-        });
-      }
-    }
-  },
 
   /**
    * Sets the token used for identifying the client to the server
@@ -307,14 +303,14 @@ var api = module.exports = {
     var parsed = url.parse( options.remote );
     api.protocol = options.protocol || parsed.protocol || 'http';
     if ( api.protocol.slice(-1) === ':') api.protocol = api.protocol.slice(0,-1);
-    if ( !api.protocolHandlers[api.protocol] ) return Promise.reject('Given protocol not supported');
-    api.hostname  = options.hostname || parsed.hostname || 'trackthis.nl';
-    api.port      = options.port     || parsed.port     || ( api.protocolHandlers[api.protocol] && api.protocolHandlers[api.protocol].defaultPort ) || 8080;
-    api.basePath  = options.basePath || parsed.pathname || '/api/';
-    api.transport = api.protocolHandlers[api.protocol].transport;
+    if ( !protocolHandlers[api.protocol] ) return Promise.reject('Given protocol not supported');
+    api.hostname = options.hostname || parsed.hostname || 'trackthis.nl';
+    api.port     = options.port     || parsed.port     || ( protocolHandlers[api.protocol] && protocolHandlers[api.protocol].defaultPort ) || 8080;
+    api.basePath = options.basePath || parsed.pathname || '/api/';
+    transport    = protocolHandlers[api.protocol].transport;
     if ( api.basePath.slice(-1) !== '/' ) api.basePath += '/';
     return new Promise(function(resolve, reject) {
-      api.versions()
+      transport('versions')
         .then(function(response) {
           var serverVersions = response.data.map(function(v) {
             return (v.substr(0,1)==='v') ? parseInt(v.substr(1)) : v;
@@ -326,19 +322,6 @@ var api = module.exports = {
           resolve();
         })
     })
-      .then(('function'===(typeof callback))?callback:noop);
-  },
-
-  /**
-   * Fetch the available versions from the server
-   *
-   * @returns {Promise}
-   */
-  versions : function (callback) {
-    return checkTransport()
-      .then(function() {
-        return api.transport('versions');
-      })
       .then(('function'===(typeof callback))?callback:noop);
   },
 };
