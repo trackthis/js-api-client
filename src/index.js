@@ -95,6 +95,7 @@ var noop              = function(data){return data;},
  * You should not assume that keys are preserved
 
  * @param   {...array} arr
+ *
  * @returns {array}
  */
 function intersect(arr) {
@@ -204,8 +205,9 @@ function ensureManifest() {
  *
  * Returns a url-encoded object, usable as a query for a GET or POST request
  *
- * @param   {object} obj
- * @param   {string} prefix
+ * @param {object} obj
+ * @param {string} prefix
+ *
  * @returns {string}
  */
 function serializeObject(obj, prefix) {
@@ -265,6 +267,7 @@ var api = module.exports = {
    * Sets the client id used for identifying the application to the server
    *
    * @param {string} id
+   *
    * @returns {object} api
    */
   setClientId: function( id ) {
@@ -276,6 +279,7 @@ var api = module.exports = {
    * Sets the callback url to be included in calls which require a callback
    *
    * @param {string} url
+   *
    * @returns {object} api
    */
   setCallback: function( url ) {
@@ -283,7 +287,16 @@ var api = module.exports = {
     return api;
   },
 
-  registerProtocolHanlder: function( protocol, options, callback ) {
+  /**
+   * Register a new protocol handler
+   *
+   * @param {string}   protocol
+   * @param {object}   options
+   * @param {function} [callback]
+   *
+   * @returns {Promise}
+   */
+  registerProtocolHandler: function( protocol, options, callback ) {
     options = options || {};
     if ( 'object' === typeof protocol ) {
       options = protocol;
