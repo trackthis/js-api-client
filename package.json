@@ -4,7 +4,7 @@
   "description": "Default trackthis API client for javascript",
   "main": "src/node.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "./node_modules/.bin/nyc ./node_modules/.bin/mocha test",
     "build": "cp src/index.js lib/node.js && node_modules/.bin/browserify src/wrapper.js -o lib/browser.js && node_modules/.bin/uglifyjs -o lib/browser.min.js --mangle --compress --  lib/browser.js && cp lib/browser.min.js docs/assets/client.min.js"
   },
   "repository": {
@@ -19,6 +19,9 @@
   },
   "devDependencies": {
     "browserify": "^16.1.0",
+    "co-mocha": "0.0.1",
+    "clover": "0.0.1",
+    "nyc": "^11.4.1",
     "uglify-js-es6": "^2.4.11"
   }
 }
