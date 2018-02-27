@@ -238,20 +238,6 @@ var api = module.exports = {
   basePath  : null,
 
   /**
-   * Sets the refresh token used for updating the API token
-   *
-   * Only use this if you know to use a certain token
-   * Ordinarily, the client itself handles this
-   *
-   * @param {string} refreshToken
-   * @returns {object} api
-   */
-  setRefreshToken: function( refreshToken ) {
-    settings.refreshToken = refreshToken;
-    return api;
-  },
-
-  /**
    * Sets the client id used for identifying the application to the server
    *
    * @param {string} id
@@ -353,9 +339,11 @@ var api = module.exports = {
      * @returns {Promise}
      */
     logout: function() {
-      settings.token = undefined;
-      settings.user  = undefined;
+      settings.token        = undefined;
+      settings.refreshToken = undefined;
+      settings.user         = undefined;
       localstorage.removeItem('token');
+      localstorage.removeItem('refreshToken');
       return Promise.resolve();
     },
 
@@ -375,6 +363,23 @@ var api = module.exports = {
       settings.token = newToken;
       settings.user  = undefined;
       localstorage.setItem('token',newToken);
+      return Promise.resolve();
+    },
+
+    /**
+     * Sets the refresh token used for updating the API token
+     *
+     * Only use this if you know to use a certain token
+     * Ordinarily, the client itself handles this
+     *
+     * @param {string} refreshToken
+     * @returns {Promise}
+     */
+    setRefreshToken: function( refreshToken ) {
+      if ( 'string' !== typeof refreshToken ) return Promise.reject('The new token is not a string');
+      if ( !refreshToken.length ) return Promise.reject('The new token is an empty string');
+      settings.refreshToken = refreshToken;
+      localstorage.setItem('refreshToken',refreshToken);
       return Promise.resolve();
     }
 

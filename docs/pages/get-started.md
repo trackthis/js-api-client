@@ -86,9 +86,9 @@ Apart from the functions which set stuff like the tokens, client id & callback u
 List of functions which do not return a promise
 
 ```js
-trackthisApi.user.setToken("super-secret-token-string");     // Token to be used in authenticated calls
-trackthisApi.setRefreshToken("super-secret-refresh-token");  // Refresh token to update the actual API token
-trackthisApi.setClientId("the-id-of-your-app");              // Id of your application to identify itself
-trackthisApi.setCallback("callback-url-of-your-app");        // The callback url of your application (must match the registered url)
+trackthisApi.user.setToken("super-secret-token-string");         // Token to be used in authenticated calls
+trackthisApi.user.setRefreshToken("super-secret-refresh-token"); // Refresh token to update the actual API token
+trackthisApi.setClientId("the-id-of-your-app");                  // Id of your application to identify itself
+trackthisApi.setCallback("callback-url-of-your-app");            // The callback url of your application (must match the registered url)
 ```
 
