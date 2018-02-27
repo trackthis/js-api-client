@@ -232,10 +232,10 @@ var api = module.exports = {
   /**
    * Basic settings for our transport on how to connect/talk to the remote
    */
-  protocol  : 'https',
-  hostname  : null,
-  port      : null,
-  basePath  : null,
+  protocol : 'https',
+  hostname : null,
+  port     : null,
+  basePath : null,
 
   /**
    * Sets the client id used for identifying the application to the server
@@ -244,7 +244,7 @@ var api = module.exports = {
    *
    * @returns {object} api
    */
-  setClientId: function( id ) {
+  setClientId : function (id) {
     settings.clientId = id;
     return api;
   },
@@ -256,7 +256,7 @@ var api = module.exports = {
    *
    * @returns {object} api
    */
-  setCallback: function( url ) {
+  setCallback : function (url) {
     settings.callback = url;
     return api;
   },
@@ -270,19 +270,19 @@ var api = module.exports = {
    *
    * @returns {Promise}
    */
-  registerProtocolHandler: function( protocol, options, callback ) {
+  registerProtocolHandler : function (protocol, options, callback) {
     options = options || {};
-    if ( 'object' === typeof protocol ) {
-      options = protocol;
+    if ('object' === typeof protocol) {
+      options  = protocol;
       protocol = options.protocol || options.proto || options.name || '';
     }
-    if ( 'string' !== protocol ) {
+    if ('string' !== protocol) {
       return Promise.reject('Protocol not given or not a string');
     }
-    if ( 'function' !== options.transport ) {
+    if ('function' !== options.transport) {
       return Promise.reject('Transport not given or not a function');
     }
-    options.defaultPort = options.defaultPort || options.port || 80;
+    options.defaultPort        = options.defaultPort || options.port || 80;
     protocolHandlers[protocol] = options;
     return Promise.resolve().then('function'===(typeof callback)?callback:noop);
   },
@@ -299,25 +299,25 @@ var api = module.exports = {
    * @return {Promise}
    */
   connect: function( options, callback ) {
-    if ( 'function' === typeof options ) { callback = options ; options = {} ; }
-    if ( 'string' === typeof options ) options = { remote: options };
+    if ('function' === typeof options) { callback = options ; options = {} ; }
+    if ('string'   === typeof options) options = { remote: options };
     options = options || {};
-    if ( 'object' !== typeof options ) throw "Given options was neither a string, an object or undefined";
+    if ('object' !== typeof options) throw "Given options was neither a string, an object or undefined";
     options.remote = options.remote || 'https://trackthis.nl/api';
-    var parsed = url.parse( options.remote );
-    api.protocol = options.protocol || parsed.protocol || 'http';
-    if ( api.protocol.slice(-1) === ':') api.protocol = api.protocol.slice(0,-1);
-    if ( !protocolHandlers[api.protocol] ) return Promise.reject('Given protocol not supported');
+    var parsed     = url.parse(options.remote);
+    api.protocol   = options.protocol || parsed.protocol || 'http';
+    if (api.protocol.slice(-1) === ':') api.protocol = api.protocol.slice(0, -1);
+    if (!protocolHandlers[api.protocol]) return Promise.reject('Given protocol not supported');
     api.hostname = options.hostname || parsed.hostname || 'trackthis.nl';
     api.port     = options.port     || parsed.port     || ( protocolHandlers[api.protocol] && protocolHandlers[api.protocol].defaultPort ) || 8080;
     api.basePath = options.basePath || parsed.pathname || '/api/';
     transport    = protocolHandlers[api.protocol].transport;
-    if ( api.basePath.slice(-1) !== '/' ) api.basePath += '/';
-    return new Promise(function(resolve, reject) {
-      transport(Object.assign({name:'versions'},settings,options))
-        .then(function(response) {
-          var serverVersions = response.data.map(function(v) {
-            return (v.substr(0,1)==='v') ? parseInt(v.substr(1)) : v;
+    if (api.basePath.slice(-1) !== '/') api.basePath += '/';
+    return new Promise(function (resolve, reject) {
+      transport(Object.assign({name : 'versions'}, settings, options))
+        .then(function (response) {
+          var serverVersions = response.data.map(function (v) {
+            return (v.substr(0, 1) === 'v') ? parseInt(v.substr(1)) : v;
           });
           chosenVersion = intersect(serverVersions, supportedVersions).pop();
           if (!chosenVersion) {
@@ -329,7 +329,7 @@ var api = module.exports = {
       .then(('function'===(typeof callback))?callback:noop);
   },
 
-  user: {
+  user : {
 
     /**
      * Logs out the user inside this browser
@@ -338,7 +338,7 @@ var api = module.exports = {
      *
      * @returns {Promise}
      */
-    logout: function() {
+    logout : function () {
       settings.token        = undefined;
       settings.refreshToken = undefined;
       settings.user         = undefined;
@@ -357,12 +357,12 @@ var api = module.exports = {
      *
      * @returns {Promise}
      */
-    setToken: function( newToken ) {
-      if ( 'string' !== typeof newToken ) return Promise.reject('The new token is not a string');
-      if ( !newToken.length ) return Promise.reject('The new token is an empty string');
+    setToken : function (newToken) {
+      if ('string' !== typeof newToken) return Promise.reject('The new token is not a string');
+      if (!newToken.length) return Promise.reject('The new token is an empty string');
       settings.token = newToken;
       settings.user  = undefined;
-      localstorage.setItem('token',newToken);
+      localstorage.setItem('token', newToken);
       return Promise.resolve();
     },
 
@@ -375,11 +375,11 @@ var api = module.exports = {
      * @param {string} refreshToken
      * @returns {Promise}
      */
-    setRefreshToken: function( refreshToken ) {
-      if ( 'string' !== typeof refreshToken ) return Promise.reject('The new token is not a string');
-      if ( !refreshToken.length ) return Promise.reject('The new token is an empty string');
+    setRefreshToken : function (refreshToken) {
+      if ('string' !== typeof refreshToken) return Promise.reject('The new token is not a string');
+      if (!refreshToken.length) return Promise.reject('The new token is an empty string');
       settings.refreshToken = refreshToken;
-      localstorage.setItem('refreshToken',refreshToken);
+      localstorage.setItem('refreshToken', refreshToken);
       return Promise.resolve();
     }
 
