@@ -1,6 +1,7 @@
-var ajax    = require('ajax-request'),
-    Promise = require('bluebird'),
-    url     = require('url');
+var ajax         = require('ajax-request'),
+    localstorage = require('./localstorage'),
+    Promise      = require('bluebird'),
+    url          = require('url');
 
 /* "global" variables we'll use */
 
@@ -13,10 +14,11 @@ var noop              = function(data){return data;},
       'baseuri','formats'
     ],
     settings          = {
-      callback     : null,
-      clientId     : null,
-      token        : null,
-      refreshToken : null
+      callback     : undefined,
+      clientId     : undefined,
+      user         : undefined,
+      token        : undefined,
+      refreshToken : undefined
     },
 
 
@@ -236,20 +238,6 @@ var api = module.exports = {
   basePath  : null,
 
   /**
-   * Sets the token used for identifying the client to the server
-   *
-   * Only use this if you know to use a certain token
-   * Ordinarily, the client itself handles this
-   *
-   * @param {string} token
-   * @returns {object} api
-   */
-  setToken: function( token ) {
-    settings.token = token;
-    return api;
-  },
-
-  /**
    * Sets the refresh token used for updating the API token
    *
    * Only use this if you know to use a certain token
@@ -354,4 +342,24 @@ var api = module.exports = {
     })
       .then(('function'===(typeof callback))?callback:noop);
   },
+
+  user: {
+
+    /**
+     * Sets the token used for identifying the client/user to the server
+     *
+     * Only use this if you know to use a certain token
+     * Ordinarily, the client itself handles this
+     *
+     * @param {string} newToken
+     *
+     * @returns {object} api
+     */
+    setToken: function( newToken ) {
+      settings.token = newToken;
+      settings.user  = undefined;
+      localstorage.setItem('token',newToken);
+    }
+
+  }
 };
