@@ -245,7 +245,7 @@ var api = module.exports = {
    * @returns {object} api
    */
   setToken: function( token ) {
-    hiddenSettings.token = token;
+    settings.token = token;
     return api;
   },
 
@@ -259,7 +259,7 @@ var api = module.exports = {
    * @returns {object} api
    */
   setRefreshToken: function( refreshToken ) {
-    hiddenSettings.refreshToken = refreshToken;
+    settings.refreshToken = refreshToken;
     return api;
   },
 
@@ -271,7 +271,7 @@ var api = module.exports = {
    * @returns {object} api
    */
   setClientId: function( id ) {
-    hiddenSettings.clientId = id;
+    settings.clientId = id;
     return api;
   },
 
@@ -283,7 +283,7 @@ var api = module.exports = {
    * @returns {object} api
    */
   setCallback: function( url ) {
-    hiddenSettings.callback = url;
+    settings.callback = url;
     return api;
   },
 
@@ -340,7 +340,7 @@ var api = module.exports = {
     transport    = protocolHandlers[api.protocol].transport;
     if ( api.basePath.slice(-1) !== '/' ) api.basePath += '/';
     return new Promise(function(resolve, reject) {
-      transport('versions')
+      transport(Object.assign({name:'versions'},settings,options))
         .then(function(response) {
           var serverVersions = response.data.map(function(v) {
             return (v.substr(0,1)==='v') ? parseInt(v.substr(1)) : v;
