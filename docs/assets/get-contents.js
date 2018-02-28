@@ -16,10 +16,10 @@
   }
 })(function () {
   var factories = [
-    function () {return new XMLHttpRequest()},
-    function () {return new ActiveXObject("Msxml2.XMLHTTP")},
-    function () {return new ActiveXObject("Msxml3.XMLHTTP")},
-    function () {return new ActiveXObject("Microsoft.XMLHTTP")}
+    function () {return new XMLHttpRequest();},
+    function () {return new ActiveXObject("Msxml2.XMLHTTP");},
+    function () {return new ActiveXObject("Msxml3.XMLHTTP");},
+    function () {return new ActiveXObject("Microsoft.XMLHTTP");}
   ];
 
   function httpObject() {
@@ -53,5 +53,5 @@
       cb(response);
     };
     req.send();
-  }
+  };
 });
