@@ -59,7 +59,7 @@ co(function* () {
         }
 
         // Start linting
-        JSHINT(contents, { esversion : 6, noyield : true, loopfunc : true });
+        JSHINT(contents, { esversion : 6, noyield : true, loopfunc : true, predef: [ '-Promise' ] });
         var hintData;
 
         // Fetch the lint result

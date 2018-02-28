@@ -10,6 +10,7 @@ var noop              = function(data){return data;},
     chosenVersion     = null,
     transport         = null,
     rawApi            = {},
+    signatureConfig   = undefined,
     skipManifestKeys  = [
       'baseuri','formats'
     ],
@@ -60,7 +61,6 @@ var noop              = function(data){return data;},
           api.basePath = api.basePath || '/';
           if ( api.basePath.slice(-1) !== '/' ) api.basePath += '/';
           var parsed = options.url && url.parse(options.url) || {};
-          console.log(parsed);
           options.name     = options.name.replace(/\./g,'/');
           options.method   = (options.method || 'get').toUpperCase();
           options.protocol = options.protocol || parsed.protocol || api.protocol || (document && document.location && document.location.protocol);
@@ -71,7 +71,6 @@ var noop              = function(data){return data;},
           options.url      = url.format(options);
           return new Promise(function(resolve,reject) {
             ajax(options, function(err, res, body) {
-              if ( err ) return reject(err);
               var output = {
                 status : res.statusCode,
                 text   : body,
@@ -82,6 +81,7 @@ var noop              = function(data){return data;},
               } catch(e) {
                 output.data = null;
               }
+              if ( err ) return reject(Object.assign({ error: err }, output));
               resolve(output);
             });
           });
@@ -200,6 +200,23 @@ function ensureManifest() {
   return new Promise(function(resolve) {
     if ( Object.keys(rawApi).length ) return resolve();
     fetchManifest(resolve);
+  }).then(noop);
+}
+
+/**
+ * Ensure we have the configuration we need for building signatures
+ *
+ * @returns {Promise}
+ */
+function ensureSignatureConfig() {
+  return new Promise(function(resolve) {
+    if ( signatureConfig ) return resolve();
+    ensureManifest()
+      .then(rawApi.signature.getConfig)
+      .then(function(response) {
+        signatureConfig = response.data;
+      })
+      .then(resolve);
   }).then(noop);
 }
 
@@ -385,38 +402,75 @@ var api = module.exports = {
      *
      */
     login: function (data) {
+      if ( 'string' !== typeof data.username ) return Promise.reject("Username is required");
       return checkTransport()
         .then(ensureManifest)
-        .then(function() {
-          console.log(url);
-          if ( rawApi.user.getLogin ) {
-            // JWT supported
+        .then(ensureSignatureConfig)
+        .then(function(response) {
 
-            // try to pry a token out of the server
-            return rawApi.user.getLogin({ data: data })
-              .then(function(response) {
-                if ( !response.data ) throw "Invalid data returned";
-              })
-              .catch(function() {
+          // Make the data quick-to-access
+          var username  = data.username,
+              token     = data.token     || undefined,
+              password  = data.password  || undefined,
+              signature = data.signature || undefined;
 
-              })
-          } else if ( rawApi.oauth.getAuth ) {
-            // oauth supported
+          // if ( !signature && password ) {
+          //   var keys = keyService.generateKeys(username,password);
+          //   console.log(keys);
+          //   signature = keyService.sign(keys.private_key,username);
+          //   console.log(signature);
+          // }
 
-            // redirect the client to the login page
-            window.document.location = url.format({
-              protocol : api.protocol + ((api.protocol.slice(-1) !== ':') ? ':' : ''),
-              hostname : api.hostname || (document && document.location && document.location.hostname),
-              port     : api.port || (document && document.location && document.location.port),
-              pathname : ( api.basePath + 'v' + chosenVersion + '/' + 'oauth/auth' ),
-              query    : serializeObject(data||{})
-            });
 
-            // Just in case the JS engine decides to continue
-            return Promise.resolve();
-          } else {
-            throw 'None of our supported authentication methods is supported by the server';
-          }
+          // var manifest = response.data;
+          //
+          // // Explode the given data to our scope
+          // var username  = data.username,
+          //     token     = data.token     || undefined,
+          //     password  = data.password  || undefined,
+          //     signature = data.signature || undefined;
+          //
+          // // Try to build the signature if it's missing
+          // if (!signature && password) {
+          //
+          // }
+
+
+          // Try to authenticate by signature first
+
+
+          // console.log(arguments);
+
+
+          // if ( rawApi.user.getLogin ) {
+          //   // JWT supported
+          //
+          //   // try to pry a token out of the server
+          //   return rawApi.user.getLogin({ data: data })
+          //     .then(function(response) {
+          //       console.log('RESPONSE:',response);
+          //       if ( !response.data ) throw "Invalid data returned";
+          //     })
+          //     .catch(function() {
+          //       console.log('ARGS:', arguments);
+          //     })
+          // } else if ( rawApi.oauth.getAuth ) {
+          //   // oauth supported
+          //
+          //   // redirect the client to the login page
+          //   window.document.location = url.format({
+          //     protocol : api.protocol + ((api.protocol.slice(-1) !== ':') ? ':' : ''),
+          //     hostname : api.hostname || (document && document.location && document.location.hostname),
+          //     port     : api.port || (document && document.location && document.location.port),
+          //     pathname : ( api.basePath + 'v' + chosenVersion + '/' + 'oauth/auth' ),
+          //     query    : serializeObject(data||{})
+          //   });
+          //
+          //   // Just in case the JS engine decides to continue
+          //   return Promise.resolve();
+          // } else {
+          //   throw 'None of our supported authentication methods is supported by the server';
+          // }
         });
 
     }

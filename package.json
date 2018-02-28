@@ -5,7 +5,7 @@
   "main": "src/node.js",
   "scripts": {
     "test": "./node_modules/.bin/nyc ./node_modules/.bin/mocha test",
-    "build": "cp src/index.js lib/node.js && node_modules/.bin/browserify src/wrapper.js -o lib/browser.js && node_modules/.bin/uglifyjs -o lib/browser.min.js --mangle --compress --  lib/browser.js && cp lib/browser.min.js docs/assets/client.min.js"
+    "build": "cp src/index.js lib/node.js && node_modules/.bin/browserify src/wrapper.js -o lib/browser.js && node_modules/.bin/uglifyjs -o lib/browser.min.js --mangle --compress --  lib/browser.js && cp lib/browser.min.js docs/assets/client.min.js && cp lib/browser.js docs/assets/client.js"
   },
   "repository": {
     "type": "git",
@@ -15,10 +15,7 @@
   "license": "MIT",
   "dependencies": {
     "ajax-request": "^1.2.3",
-    "bluebird": "^3.5.1",
-    "crypto": "^1.0.1",
-    "key-encoder": "^1.1.6",
-    "url": "^0.11.0"
+    "bluebird": "^3.5.1"
   },
   "devDependencies": {
     "browserify": "^16.1.0",
