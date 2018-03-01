@@ -15,7 +15,9 @@
   "license": "MIT",
   "dependencies": {
     "ajax-request": "^1.2.3",
-    "bluebird": "^3.5.1"
+    "base64url": "^2.0.0",
+    "bluebird": "^3.5.1",
+    "key-encoder": "^1.1.6"
   },
   "devDependencies": {
     "browserify": "^16.1.0",

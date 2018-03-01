@@ -1,4 +1,6 @@
 var ajax         = require('ajax-request'),
+    base64url    = require('base64url'),
+    keyservice   = require('./keyservice'),
     localstorage = require('./localstorage'),
     Promise      = require('bluebird'),
     url          = require('url');
@@ -19,7 +21,9 @@ var noop              = function(data){return data;},
       clientId     : undefined,
       user         : undefined,
       token        : undefined,
-      refreshToken : undefined
+      refreshToken : undefined,
+      jwt          : undefined,
+      kp           : undefined
     },
 
 
@@ -409,37 +413,81 @@ var api = module.exports = {
         .then(function(response) {
 
           // Make the data quick-to-access
-          var username  = data.username,
-              token     = data.token     || undefined,
+          var username  = data.username  || (settings.user&&settings.user.username) || undefined,
+              token     = data.token     || settings.jwt || undefined,
               password  = data.password  || undefined,
-              signature = data.signature || undefined;
+              signature = data.signature || undefined,
+              kp        = data.signature || settings.kp || undefined;
 
-          // if ( !signature && password ) {
-          //   var keys = keyService.generateKeys(username,password);
-          //   console.log(keys);
-          //   signature = keyService.sign(keys.private_key,username);
-          //   console.log(signature);
-          // }
+          // We must have a username
+          if (!username) {
+            throw "No username known or given";
+          }
 
+          // Try to login through tokens
+          if ( rawApi.user.getLogin ) {
+            // JWT auth supported
 
-          // var manifest = response.data;
-          //
-          // // Explode the given data to our scope
-          // var username  = data.username,
-          //     token     = data.token     || undefined,
-          //     password  = data.password  || undefined,
-          //     signature = data.signature || undefined;
-          //
-          // // Try to build the signature if it's missing
-          // if (!signature && password) {
-          //
-          // }
+            // Try an existing token
+            if ( token ) {
 
+              // TODO: try the token here
+              console.log(token);
 
-          // Try to authenticate by signature first
+              // Try adding a signature to the token
+              if ( !signature ) {
 
+                // We actually need the password now
+                if (!password) {
+                  throw "No password given";
+                }
 
-          // console.log(arguments);
+                // Generate the keypair if needed
+                kp = kp || keyservice.generateKeys(username,password);
+
+                // Generate the actual signature
+                signature = base64url.encode(new Buffer(keyservice.sign(kp,token),keyservice.format));
+              }
+
+              // Re-try the token
+              token += '.' + signature;
+
+              // TODO: try the token here
+              console.log(token);
+            }
+
+            // From here on, we'll always need the password
+            if (!password) {
+              throw "No password given";
+            }
+
+            // Generate the keypair if needed
+            kp = kp || keyservice.generateKeys(username,password);
+
+            // Generate the part of the token we'll sign
+            token = base64url.encode(JSON.stringify({
+              "alg": "ES256",
+              "typ": "JWT"
+            })) + '.' + base64url.encode(JSON.stringify({
+              username: username
+            }));
+
+            // Generate it's signature
+            signature  = base64url.encode(new Buffer(keyservice.sign(kp,token),keyservice.format));
+            token     += '.' + signature;
+
+            // TODO: try the token here
+            console.log(token);
+          }
+
+          // Try to login through oauth
+          if ( rawApi.oauth.getAuth ) {
+            // oauth supported
+          }
+
+          // Everything else failed
+          throw 'None of our supported authentication methods is supported by the server';
+
 
 
           // if ( rawApi.user.getLogin ) {
