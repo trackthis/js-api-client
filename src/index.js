@@ -121,11 +121,12 @@ function intersect(arr) {
 
   // Intersect it with all the other arguments
   // Also makes sure only arrays are used
-  while ( intermediate = args.shift() ) {
+  while ( args.length ) {
+    intermediate = args.shift();
     if (!Array.isArray(intermediate)) continue;
     output = output.filter(function(entry) {
       return intermediate.indexOf(entry) >= 0;
-    })
+    });
   }
 
   return output;
@@ -178,7 +179,7 @@ function fetchManifest(callback) {
                                 return transport(Object.assign({
                                   method : method.toUpperCase(),
                                   name   : path.concat([key]).join('.')
-                                },options))
+                                },options));
                               });
                           };
                         });
@@ -422,7 +423,8 @@ var api = module.exports = {
               token     = data.token     || settings.jwt || undefined,
               password  = data.password  || undefined,
               signature = data.signature || undefined,
-              kp        = data.signature || settings.kp || undefined;
+              kp        = data.kp        || settings.kp || undefined,
+              signer    = data.signer    || username || undefined;
 
           // We must have a username
           if (!username) {
@@ -455,13 +457,14 @@ var api = module.exports = {
                 if (!password) return fail("No password given");
                 kp = kp || keyservice.generateKeys(username,password);
                 signature = base64url.encode(new Buffer(keyservice.sign(kp,token),keyservice.format));
+                signer    = username;
               }
 
               // Try the token with a signature added
               token += '.' + signature;
 
               // Send the request
-              return rawApi.user.getLogin({ data: { token: token, username: username } })
+              return rawApi.user.getLogin({ data: { token: token, username: username, signer: signer } })
                            .then(function(response) {
                              console.log('SIGNED-TOKEN:', token, response);
                              next();
@@ -494,6 +497,7 @@ var api = module.exports = {
 
               // Generate the keypair if needed
               kp = kp || keyservice.generateKeys(username,password);
+              console.log(kp);
 
               // Generate the part of the token we'll sign
               token = base64url.encode(JSON.stringify({
@@ -505,10 +509,11 @@ var api = module.exports = {
 
               // Generate it's signature
               signature  = base64url.encode(new Buffer(keyservice.sign(kp,token),keyservice.format));
+              signer     = username;
               token     += '.' + signature;
 
               // Send the request
-              return rawApi.user.getLogin({ data: { token: token } })
+              return rawApi.user.getLogin({ data: { token: token, signer: signer } })
                            .then(function(response) {
                              console.log('GENERATED-TOKEN:',token, response);
                              next();
