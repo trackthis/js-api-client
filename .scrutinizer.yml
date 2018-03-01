@@ -10,3 +10,7 @@ build:
 checks:
   javascript:
     code_rating: true
+
+filter:
+  excluded_paths:
+    - "*.min.js" # Don't analyze minified files
