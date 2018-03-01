@@ -20,7 +20,7 @@
     return (function next(data) {
       var f = q.shift();
       if (!f) return ( 'function' === typeof resolve ) ? resolve(data) : data;
-      setTimeout( function () { f( data, next, reject ); },100 );
+      setTimeout( function () { f( data, next, reject ); },0 );
     })();
   };
 });
