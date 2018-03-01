@@ -4,7 +4,7 @@
   "description": "Default trackthis API client for javascript",
   "main": "src/node.js",
   "scripts": {
-    "test": "./node_modules/.bin/nyc ./node_modules/.bin/mocha test",
+    "test": "node_modules/.bin/nyc node_modules/.bin/serial-mocha test/* --sort | tee test-output.txt && ./node_modules/.bin/nyc report --reporter=clover && ! grep -q -oP \"\\d+\\sfailing\" test-output.txt && rm test-output.txt || { echo \"Test output is located in 'test-output.txt'\" ; exit 1 ; }",
     "build": "cp src/index.js lib/node.js && node_modules/.bin/browserify src/wrapper.js -o lib/browser.js && node_modules/.bin/uglifyjs -o lib/browser.min.js --mangle --compress --  lib/browser.js && cp lib/browser.min.js docs/assets/client.min.js && cp lib/browser.js docs/assets/client.js"
   },
   "repository": {
@@ -27,6 +27,7 @@
     "fs-extra": "^5.0.0",
     "jshint": "^2.9.5",
     "nyc": "^11.4.1",
-    "uglify-js-es6": "^2.4.11"
+    "uglify-js-es6": "^2.4.11",
+    "serial-mocha": "0.0.4"
   }
 }
