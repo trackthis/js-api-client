@@ -2,6 +2,7 @@
   var result = factory();
 
   // Register to node if possible
+  /** global: define */
   if (('undefined' !== typeof module) && ('undefined' !== typeof module.exports)) {
     module.exports = result;
   }
@@ -19,8 +20,9 @@
     var q = list.slice();
     return (function next(data) {
       var f = q.shift();
-      if (!f) return ( 'function' === typeof resolve ) ? resolve(data) : data;
+      if (!f) { return ( 'function' === typeof resolve ) ? resolve(data) : data; }
       setTimeout( function () { f( data, next, reject ); },0 );
+      return undefined;
     })();
   };
 });
