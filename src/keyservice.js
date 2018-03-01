@@ -4,16 +4,19 @@ var crypto      = require('crypto'),
 
 var keyservice = module.exports = {
 
+  // The server's public key
+  pubkey : undefined,
+
   // Default settings
-  curve    : 'secp256k1',
-  label    : 'ecdsa-sha2-secp256k1',
-  keylen   : 32,
-  digest   : 'sha256',
-  format   : 'base64',
-  signature: {
-    base   : 1000,
-    hash   : 'sha256',
-    modulo : 9000
+  curve  : 'secp256k1',
+  label  : 'ecdsa-sha2-secp256k1',
+  keylen : 32,
+  digest : 'sha256',
+  format : 'base64',
+  signature : {
+    base    : 1000,
+    hash    : 'sha256',
+    modulo  : 9000
   },
 
   /**
