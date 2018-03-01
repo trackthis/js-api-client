@@ -41667,9 +41667,9 @@ var noop              = function(data){return data;},
       http: {
         defaultPort: 80,
         transport : function( options ) {
-          if ( 'string' === typeof options ) options = { name: options };
+          if ( 'string' === typeof options ) { options = { name: options }; }
           options = options || {};
-          if ( !options.name ) return Promise.reject('No name given');
+          if ( !options.name ) { return Promise.reject('No name given'); }
           options.protocol = 'http';
           options.port     = options.port || api.port || protocolHandlers.http.defaultPort;
           return protocolHandlers.https.transport(options);
@@ -41684,16 +41684,16 @@ var noop              = function(data){return data;},
       https: {
         defaultPort: 443,
         transport  : function( options ) {
-          if ( 'string' === typeof options ) options = { name: options };
+          if ( 'string' === typeof options ) { options = { name: options }; }
           options = options || {};
-          if ( !options.name ) return Promise.reject('No name given');
+          if ( !options.name ) { return Promise.reject('No name given'); }
           api.basePath = api.basePath || '/';
-          if ( api.basePath.slice(-1) !== '/' ) api.basePath += '/';
+          if ( api.basePath.slice(-1) !== '/' ) { api.basePath += '/'; }
           var parsed = options.url && url.parse(options.url) || {};
           options.name     = options.name.replace(/\./g,'/');
           options.method   = (options.method || 'get').toUpperCase();
           options.protocol = options.protocol || parsed.protocol || api.protocol || (document && document.location && document.location.protocol);
-          if ( options.protocol.slice(-1) !== ':' ) options.protocol += ':';
+          if ( options.protocol.slice(-1) !== ':' ) { options.protocol += ':'; }
           options.hostname = options.hostname || parsed.hostname || api.hostname || (document && document.location && document.location.hostname);
           options.port     = options.port     || parsed.port     || api.port     || (document && document.location && document.location.port    );
           options.pathname = options.pathname || ( api.basePath + ((options.name==='versions')?'':('v'+chosenVersion+'/')) + options.name + '.json' );
@@ -41710,8 +41710,9 @@ var noop              = function(data){return data;},
               } catch(e) {
                 output.data = null;
               }
-              if ( err ) return reject(Object.assign({ error: err }, output));
+              if ( err ) { return reject(Object.assign({ error: err }, output)); }
               resolve(output);
+              return undefined;
             });
           });
         }
@@ -41726,33 +41727,32 @@ var noop              = function(data){return data;},
  * Returns a new array representing the intersection of arrays
  * You should not assume that keys are preserved
 
- * @param   {...array} arr
+ * @param {...array}
  *
  * @returns {array}
  */
-function intersect(arr) {
+function intersect() {
 
   // Convert the arguments special to an array
   var args = arguments;
   args = Object.keys(args).map(function(key) {
     return args[key];
   });
-  if ( !args.length ) return [];
+  if ( !args.length ) { return []; }
 
   // Fetch the first argument & make sure it's an array
-  var intermediate, output = args.shift();
-  if (!Array.isArray(output)) return [];
+  var output = args.shift();
+  if (!Array.isArray(output)) { return []; }
   output = output.slice();
 
   // Intersect it with all the other arguments
   // Also makes sure only arrays are used
-  while ( args.length ) {
-    intermediate = args.shift();
-    if (!Array.isArray(intermediate)) continue;
+  args.forEach(function(subject) {
+    if (!Array.isArray(subject)) { return; }
     output = output.filter(function(entry) {
-      return intermediate.indexOf(entry) >= 0;
+      return subject.indexOf(entry) >= 0;
     });
-  }
+  });
 
   return output;
 }
