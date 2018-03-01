@@ -133,7 +133,8 @@ var keyservice = module.exports = {
     private_key = private_key && private_key.private_key || private_key;
     try {
       var cryptoSign = crypto.createSign(keyservice.digest);
-      cryptoSign.write(JSON.stringify(data));
+      if ( 'string' !== typeof data ) data = JSON.stringify(data, Object.keys(data).sort());
+      cryptoSign.write(data);
       cryptoSign.end();
       var private_key_pem = keyEncoder.encodePrivate(keyservice.toHex(keyservice.decode(private_key)), 'raw', 'pem');
       return cryptoSign.sign(private_key_pem, keyservice.format);
@@ -172,7 +173,8 @@ var keyservice = module.exports = {
     public_key = public_key && public_key.public_key || public_key;
     try {
       var cryptoVerify = crypto.createVerify(keyservice.digest);
-      cryptoVerify.write(JSON.stringify(data));
+      if ( 'string' !== typeof data ) data = JSON.stringify(data, Object.keys(data).sort());
+      cryptoVerify.write(data);
       cryptoVerify.end();
       var public_key_pem = keyEncoder.encodePublic(keyservice.toHex(keyservice.decode(public_key)), 'raw', 'pem');
       return cryptoVerify.verify(public_key_pem, keyservice.decode(signature), keyservice.format);
