@@ -177,7 +177,7 @@ var keyservice = module.exports = {
       cryptoVerify.write(data);
       cryptoVerify.end();
       var public_key_pem = keyEncoder.encodePublic(keyservice.toHex(keyservice.decode(public_key)), 'raw', 'pem');
-      return cryptoVerify.verify(public_key_pem, keyservice.decode(signature), keyservice.format);
+      return cryptoVerify.verify(public_key_pem, signature, keyservice.format);
     } catch (err) {
       console.error(err);
       throw new Error({
