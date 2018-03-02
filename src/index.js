@@ -1,7 +1,8 @@
 var ajax         = require('ajax-request'),
     base64url    = require('base64url'),
     cbq          = require('./cbq'),
-    keyservice   = require('./keyservice'),
+    crypto       = require('crypto'),
+    EC           = require('trackthis-ecdsa'),
     localstorage = require('./localstorage'),
     Promise      = require('bluebird'),
     url          = require('url');
@@ -24,6 +25,23 @@ var noop              = function(data){return data;},
       refreshToken : undefined,
       jwt          : undefined,
       kp           : undefined
+    },
+    sigConfig =  {
+
+      // The server's public key
+      pubkey : undefined,
+
+      // Default settings
+      curve     : 'secp256k1',
+      label     : 'ecdsa-sha2-secp256k1',
+      keylen    : 32,
+      digest    : 'sha256',
+      format    : 'base64',
+      iterations : {
+        base   : 1000,
+        hash   : 'sha256',
+        modulo : 9000
+      }
     },
 
 
@@ -215,16 +233,16 @@ function ensureManifest() {
  */
 function ensureSignatureConfig() {
   return new Promise(function(resolve) {
-    if ( keyservice.pubkey ) return resolve();
+    if ( sigConfig.pubkey ) return resolve();
     ensureManifest()
       .then(rawApi.signature.getConfig)
       .then(function(response) {
-        keyservice.curve = response.data.curve || keyservice.curve;
-        keyservice.digest = response.data.digest || keyservice.digest;
-        keyservice.format = response.data.format || keyservice.format;
-        keyservice.signature = response.data.iterations || keyservice.signature;
-        keyservice.keylen = response.data.keylen || keyservice.keylen;
-        keyservice.pubkey = response.data.pubkey || keyservice.pubkey;
+        sigConfig.curve     = response.data.curve      || sigConfig.curve;
+        sigConfig.digest    = response.data.digest     || sigConfig.digest;
+        sigConfig.format    = response.data.format     || sigConfig.format;
+        sigConfig.signature = response.data.iterations || sigConfig.signature;
+        sigConfig.keylen    = response.data.keylen     || sigConfig.keylen;
+        sigConfig.pubkey    = response.data.pubkey     || sigConfig.pubkey;
       })
       .then(resolve);
   }).then(noop);
@@ -251,6 +269,18 @@ function serializeObject(obj, prefix) {
     }
   }
   return str.join("&");
+}
+
+function generateSecret( username, password ) {
+  var ec = new EC(sigConfig.curve);
+  var _hash  = ec.H(username).toString('hex');
+  var result = 0;
+  while (_hash.length) {
+    result = ((result * 16) + parseInt(_hash.substr(0, 1), 16)) % sigConfig.iterations.modulo;
+    _hash  = _hash.substr(1);
+  }
+  var iterations = result + sigConfig.iterations.base;
+  return crypto.pbkdf2Sync(password, username, iterations, sigConfig.keylen, sigConfig.digest)
 }
 
 /* The actual exported api object */
@@ -423,7 +453,7 @@ var api = module.exports = {
               token     = data.token     || settings.jwt || undefined,
               password  = data.password  || undefined,
               signature = data.signature || undefined,
-              kp        = data.kp        || settings.kp || undefined,
+              ec        = new EC(sigConfig.curve),
               signer    = data.signer    || username || undefined;
 
           // We must have a username
@@ -454,10 +484,11 @@ var api = module.exports = {
 
               // Generate signature if none present
               if (!signature) {
-                if (!password) return fail("No password given");
-                kp = kp || keyservice.generateKeys(username,password);
-                signature = base64url.encode(new Buffer(keyservice.sign(kp,token),keyservice.format));
+                if (!password) return next();
+                ec.kp.setPrivate(generateSecret(username,password));
+                signature = base64url.encode(ec.sign(token));
                 signer    = username;
+                console.log(signature);
               }
 
               // Try the token with a signature added
@@ -474,13 +505,14 @@ var api = module.exports = {
             // Try a signed username
             function(d,next,fail) {
               if (!rawApi.user.getLogin) return next();
-              if (!password) return fail("No password given");
+              if (!password) return next();
 
-              // Generate the keypair if needed
-              kp = kp || keyservice.generateKeys(username,password);
+              // Generate the keypair
+              ec.kp.setPrivate(generateSecret(username,password));
 
               // Generate the signature for the username
-              signature = base64url.encode(new Buffer(keyservice.sign(kp,username),keyservice.format));
+              var rawsig = ec.sign(username);
+              signature = base64url.encode(rawsig);
 
               // Send the request
               return rawApi.user.getLogin({ data: { username: username, signature: signature } })
@@ -493,11 +525,10 @@ var api = module.exports = {
             // Try a self-generated token
             function(d,next,fail) {
               if (!rawApi.user.getLogin) return next();
-              if (!password) return fail("No password given");
+              if (!password) return next();
 
               // Generate the keypair if needed
-              kp = kp || keyservice.generateKeys(username,password);
-              console.log(kp);
+              ec.kp.setPrivate(generateSecret(username,password));
 
               // Generate the part of the token we'll sign
               token = base64url.encode(JSON.stringify({
@@ -508,7 +539,8 @@ var api = module.exports = {
               }));
 
               // Generate it's signature
-              signature  = base64url.encode(new Buffer(keyservice.sign(kp,token),keyservice.format));
+              var rawsig = ec.sign(token);
+              signature  = base64url.encode(rawsig);
               signer     = username;
               token     += '.' + signature;
 
