@@ -23,7 +23,6 @@ var noop              = function(data){return data;},
       user         : undefined,
       token        : undefined,
       refreshToken : undefined,
-      jwt          : undefined,
       kp           : undefined
     },
     sigConfig =  {
@@ -192,13 +191,38 @@ function fetchManifest(callback) {
                         .forEach(function(method) {
                           if ( method === 'url' || method === 'description' ) return;
                           apiref[method.toLowerCase() + key.slice(0, 1).toUpperCase() + key.slice(1)] = function (options) {
-                            return checkTransport()
-                              .then(function() {
-                                return transport(Object.assign({
-                                  method : method.toUpperCase(),
-                                  name   : path.concat([key]).join('.')
-                                },options));
-                              });
+                            var returnType = ( data[key][method] && data[key][method].return && data[key][method].return.type ) || 'Object';
+                            switch(returnType) {
+                              case 'Page':
+                                var protocol = api.protocol;
+                                if (['http','https'].indexOf(protocol) < 0) protocol = 'http';
+                                protocol += ':';
+                                var uri = url.format({
+                                  protocol : protocol,
+                                  hostname : api.hostname,
+                                  port     : api.port,
+                                  pathname : options.data.pathname || ( api.basePath + ((options.name==='versions')?'':('v'+chosenVersion+'/')) + path.concat([key]).join('/') ),
+                                  search   : '?' + serializeObject(options.data)
+                                });
+                                var response = {
+                                  status: 302,
+                                  data  : { location: uri }
+                                };
+                                response.text = JSON.stringify(response.data);
+                                return Promise.resolve(response);
+                                break;
+                              default:
+                                options            = options            || {};
+                                options.data       = options.data       || {};
+                                options.data.token = options.data.token || settings.token;
+                                return checkTransport()
+                                  .then(function() {
+                                    return transport(Object.assign({
+                                      method : method.toUpperCase(),
+                                      name   : path.concat([key]).join('.')
+                                    },options));
+                                  });
+                            }
                           };
                         });
                 } else {
@@ -261,12 +285,13 @@ function ensureSignatureConfig() {
 function serializeObject(obj, prefix) {
   var str = [], p;
   for (p in obj) {
-    if (obj.hasOwnProperty(p)) {
-      var k = prefix ? prefix + "[" + p + "]" : p, v = obj[p];
-      str.push((v !== null && typeof v === "object") ?
-               serializeObject(v, k) :
-               encodeURIComponent(k) + "=" + encodeURIComponent(v));
-    }
+    if (!obj.hasOwnProperty(p)) continue;
+    if ('undefined' === typeof obj[p]) continue;
+    if ( ('string' === typeof obj[p]) && (!obj[p].length)) continue;
+    var k = prefix ? prefix + "[" + p + "]" : p, v = obj[p];
+    str.push((v !== null && typeof v === "object") ?
+             serializeObject(v, k) :
+             encodeURIComponent(k) + "=" + encodeURIComponent(v));
   }
   return str.join("&");
 }
@@ -281,6 +306,17 @@ function generateSecret( username, password ) {
   }
   var iterations = result + sigConfig.iterations.base;
   return crypto.pbkdf2Sync(password, username, iterations, sigConfig.keylen, sigConfig.digest)
+}
+
+function catchRedirect( response ) {
+  switch( response.status ) {
+    case 302:
+      if (!response.data.location) return response;
+      window.location.href = response.data.location;
+      break;
+    default:
+      return response;
+  }
 }
 
 /* The actual exported api object */
@@ -372,6 +408,7 @@ var api = module.exports = {
     transport    = protocolHandlers[api.protocol].transport;
     if (api.basePath.slice(-1) !== '/') api.basePath += '/';
     return transport(Object.assign({name : 'versions'}, settings, options))
+      .then(catchRedirect)
       .then(function (response) {
         var serverVersions = response.data.map(function (v) {
           return (v.substr(0, 1) === 'v') ? parseInt(v.substr(1)) : v;
@@ -442,6 +479,7 @@ var api = module.exports = {
      *
      */
     login: function (data) {
+      data = data || {};
       if ( 'string' !== typeof data.username ) return Promise.reject("Username is required");
       return checkTransport()
         .then(ensureManifest)
@@ -449,9 +487,7 @@ var api = module.exports = {
         .then(function() {
 
           // Make the data quick-to-access
-          var username  = data.username  || (settings.user&&settings.user.username) || undefined,
-              token     = data.token     || settings.jwt || undefined,
-              password  = data.password  || undefined,
+          var username  = data.username  || (settings.user && settings.user.username) || undefined,
               signature = data.signature || undefined,
               ec        = new EC(sigConfig.curve),
               signer    = data.signer    || username || undefined;
@@ -467,10 +503,11 @@ var api = module.exports = {
             // Try an existing token
             function(d,next,fail) {
               if (!rawApi.user.getLogin) return next();
-              if (!token) return next();
+              if (!data.token) return next();
 
               // Send the request
-              return rawApi.user.getLogin({data : {token : token, username : username}})
+              return rawApi.user.getLogin({data : {token : data.token, username : username}})
+                .then(catchRedirect)
                 .then(function (response) {
                   if (response.data && response.data.token) {
                     console.log(response);
@@ -487,26 +524,27 @@ var api = module.exports = {
             // Try an existing token with added signature
             function(d,next,fail) {
               if (!rawApi.user.getLogin) return next();
-              if (!token) return next();
+              if (!data.token) return next();
 
               // Generate signature if none present
               if (!signature) {
-                if (!password) return next();
-                ec.kp.setPrivate(generateSecret(username,password));
-                signature = base64url.encode(ec.sign(token));
-                signer    = username;
+                if ( 'string' !== typeof data.password ) return next();
+                ec.kp.setPrivate(generateSecret(username,data.password));
+                signature = base64url.encode(ec.sign(data.token));
+                signer    = data.signer || username;
               }
 
               // Try the token with a signature added
-              token += '.' + signature;
+              var tmpToken = data.token + '.' + signature;
 
               // Send the request
-              return rawApi.user.getLogin({ data: { token: token, username: username, signer: signer } })
+              return rawApi.user.getLogin({ data: { token: tmpToken, username: username, signer: signer } })
+                .then(catchRedirect)
                 .then(function (response) {
                   if (response.data && response.data.token) {
                     console.log('Authenticated through signed existing token');
-                    settings.token        = response.data.token        || settings.token;
-                    settings.refreshToken = response.data.refreshToken || response.data.refresh_token || settings.refreshToken;
+                    api.user.setToken( response.data.token || settings.token );
+                    api.user.setRefreshToken( response.data.refreshToken || response.data.refresh_token || settings.refreshToken );
                     resolve();
                   } else {
                     next();
@@ -517,21 +555,22 @@ var api = module.exports = {
             // Try a signed username
             function(d,next,fail) {
               if (!rawApi.user.getLogin) return next();
-              if (!password) return next();
+              if ( 'string' !== typeof data.password ) return next();
 
               // Generate the keypair
-              ec.kp.setPrivate(generateSecret(username,password));
+              ec.kp.setPrivate(generateSecret(username,data.password));
 
               // Generate the signature for the username
               signature = base64url.encode(ec.sign(username));
 
               // Send the request
               return rawApi.user.getLogin({ data: { username: username, signature: signature } })
+                .then(catchRedirect)
                 .then(function (response) {
                   if (response.data && response.data.token) {
                     console.log('Authenticated through signed username');
-                    settings.token        = response.data.token        || settings.token;
-                    settings.refreshToken = response.data.refreshToken || response.data.refresh_token || settings.refreshToken;
+                    api.user.setToken( response.data.token || settings.token );
+                    api.user.setRefreshToken( response.data.refreshToken || response.data.refresh_token || settings.refreshToken );
                     resolve();
                   } else {
                     next();
@@ -542,13 +581,13 @@ var api = module.exports = {
             // Try a self-generated token
             function(d,next,fail) {
               if (!rawApi.user.getLogin) return next();
-              if (!password) return next();
+              if ( 'string' !== typeof data.password ) return next();
 
               // Generate the keypair if needed
-              ec.kp.setPrivate(generateSecret(username,password));
+              ec.kp.setPrivate(generateSecret(username,data.password));
 
               // Generate the part of the token we'll sign
-              token = base64url.encode(JSON.stringify({
+              var token = base64url.encode(JSON.stringify({
                 "alg": "ES256",
                 "typ": "JWT",
                 "exp": Math.round((new Date()).getTime()/1000) + 300
@@ -563,11 +602,12 @@ var api = module.exports = {
 
               // Send the request
               return rawApi.user.getLogin({ data: { token: token } })
+                .then(catchRedirect)
                 .then(function (response) {
                   if (response.data && response.data.token) {
                     console.log('Authenticated through self-signed generated token');
-                    settings.token        = response.data.token        || settings.token;
-                    settings.refreshToken = response.data.refreshToken || response.data.refresh_token || settings.refreshToken;
+                    api.user.setToken( response.data.token || settings.token );
+                    api.user.setRefreshToken( response.data.refreshToken || response.data.refresh_token || settings.refreshToken );
                     resolve();
                   } else {
                     next();
@@ -578,6 +618,21 @@ var api = module.exports = {
             // Try oauth
             function(d,next,fail) {
               if (!rawApi.oauth.getAuth) return next();
+
+              return rawApi.oauth.getAuth({
+                             data : {
+                               username      : username,
+                               response_type : 'code',
+                               client_id     : settings.clientId || 'APP-00',
+                               redirect_uri  : settings.callback || 'http://localhost:3000/',
+                               scope         : ''
+                             }
+                           })
+                           .then(catchRedirect)
+                           .then(function (response) {
+                             console.log(response);
+                           });
+
 
               // TODO: build this
               return next();
