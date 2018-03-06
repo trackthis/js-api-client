@@ -630,7 +630,7 @@ var api = module.exports = {
                                account       : usernameList,
                                response_type : 'code',
                                client_id     : settings.clientId || 'APP-00',
-                               redirect_uri  : settings.callback || 'http://localhost:3000/',
+                               redirect_uri  : settings.callback || 'http://localhost:5000/',
                                scope         : ''
                              }
                            })
