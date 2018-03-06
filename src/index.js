@@ -10,20 +10,20 @@ var base64url    = require('base64url'),
 
 var noop              = function(data){return data;},
     supportedVersions = [ 1 ],
-    chosenVersion     = null,
-    transport         = null,
-    scope             = {},
-    rawApi            = {},
+    chosenVersion     = null, // The chosen API version
+    transport         = null, // The chosen transport
+    scope             = {},   // Scope (this) for the transport
+    rawApi            = {},   // The 'raw' api requests
     skipManifestKeys  = [
       'baseuri','formats'
     ],
     settings          = {
-      callback     : undefined,
-      clientId     : undefined,
-      user         : undefined,
-      token        : undefined,
-      refreshToken : undefined,
-      kp           : undefined
+      callback     : undefined, // Callback URL for requests
+      clientId     : undefined, // Our client ID
+      user         : undefined, // Our logged in account
+      token        : undefined, // The token we'll use for identifying ourselves
+      refreshToken : undefined, // A token to refresh the main token
+      kp           : undefined  // Our keypair
     },
     sigConfig =  {
 
