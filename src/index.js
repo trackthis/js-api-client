@@ -470,11 +470,18 @@ var api = module.exports = {
               if (!token) return next();
 
               // Send the request
-              return rawApi.user.getLogin({ data: { token: token, username: username } })
-                           .then(function(response) {
-                             console.log('PRE-EXISTING-TOKEN:', token, response);
-                             next();
-                           });
+              return rawApi.user.getLogin({data : {token : token, username : username}})
+                .then(function (response) {
+                  if (response.data && response.data.token) {
+                    console.log(response);
+                    console.log('Authenticated through existing token');
+                    settings.token        = response.data.token        || settings.token;
+                    settings.refreshToken = response.data.refreshToken || response.data.refresh_token || settings.refreshToken;
+                    resolve();
+                  } else {
+                    next();
+                  }
+                });
             },
 
             // Try an existing token with added signature
@@ -488,7 +495,6 @@ var api = module.exports = {
                 ec.kp.setPrivate(generateSecret(username,password));
                 signature = base64url.encode(ec.sign(token));
                 signer    = username;
-                console.log(signature);
               }
 
               // Try the token with a signature added
@@ -496,10 +502,16 @@ var api = module.exports = {
 
               // Send the request
               return rawApi.user.getLogin({ data: { token: token, username: username, signer: signer } })
-                           .then(function(response) {
-                             console.log('SIGNED-TOKEN:', token, response);
-                             next();
-                           });
+                .then(function (response) {
+                  if (response.data && response.data.token) {
+                    console.log('Authenticated through signed existing token');
+                    settings.token        = response.data.token        || settings.token;
+                    settings.refreshToken = response.data.refreshToken || response.data.refresh_token || settings.refreshToken;
+                    resolve();
+                  } else {
+                    next();
+                  }
+                });
             },
 
             // Try a signed username
@@ -511,15 +523,20 @@ var api = module.exports = {
               ec.kp.setPrivate(generateSecret(username,password));
 
               // Generate the signature for the username
-              var rawsig = ec.sign(username);
-              signature = base64url.encode(rawsig);
+              signature = base64url.encode(ec.sign(username));
 
               // Send the request
               return rawApi.user.getLogin({ data: { username: username, signature: signature } })
-                           .then(function(response) {
-                             console.log('SIGNED-USERNAME:', { username: username, signature: signature }, response);
-                             next();
-                           });
+                .then(function (response) {
+                  if (response.data && response.data.token) {
+                    console.log('Authenticated through signed username');
+                    settings.token        = response.data.token        || settings.token;
+                    settings.refreshToken = response.data.refreshToken || response.data.refresh_token || settings.refreshToken;
+                    resolve();
+                  } else {
+                    next();
+                  }
+                });
             },
 
             // Try a self-generated token
@@ -546,10 +563,16 @@ var api = module.exports = {
 
               // Send the request
               return rawApi.user.getLogin({ data: { token: token } })
-                           .then(function(response) {
-                             console.log('GENERATED-TOKEN:',token, response);
-                             next();
-                           });
+                .then(function (response) {
+                  if (response.data && response.data.token) {
+                    console.log('Authenticated through self-signed generated token');
+                    settings.token        = response.data.token        || settings.token;
+                    settings.refreshToken = response.data.refreshToken || response.data.refresh_token || settings.refreshToken;
+                    resolve();
+                  } else {
+                    next();
+                  }
+                });
             },
 
             // Try oauth
