@@ -49,7 +49,7 @@ var noop              = function(data){return data;},
      *
      * Each contains a default port (we're networking) and a transport which knows how to talk to the remote endpoint.
      */
-    protocolHandlers = {
+    transport = {
 
       /**
        * HTTP protocol handler
@@ -63,8 +63,8 @@ var noop              = function(data){return data;},
           options = options || {};
           if ( !options.name ) { return Promise.reject('No name given'); }
           options.protocol = 'http';
-          options.port     = options.port || api.port || protocolHandlers.http.defaultPort;
-          return protocolHandlers.https.transport(options);
+          options.port     = options.port || api.port || transport.http.defaultPort;
+          return transport.https.transport(options);
         }
       },
 
@@ -377,7 +377,7 @@ var api = module.exports = {
       return Promise.reject('Transport not given or not a function');
     }
     options.defaultPort        = options.defaultPort || options.port || 80;
-    protocolHandlers[protocol] = options;
+    transport[protocol] = options;
     return Promise.resolve().then('function'===(typeof callback)?callback:noop);
   },
 
@@ -401,11 +401,11 @@ var api = module.exports = {
     var parsed     = url.parse(options.remote);
     api.protocol   = options.protocol || parsed.protocol || 'http';
     if (api.protocol.slice(-1) === ':') api.protocol = api.protocol.slice(0, -1);
-    if (!protocolHandlers[api.protocol]) return Promise.reject('Given protocol not supported');
+    if (!transport[api.protocol]) return Promise.reject('Given protocol not supported');
     api.hostname = options.hostname || parsed.hostname || 'trackthis.nl';
-    api.port     = options.port     || parsed.port     || ( protocolHandlers[api.protocol] && protocolHandlers[api.protocol].defaultPort ) || 8080;
+    api.port     = options.port     || parsed.port     || ( transport[api.protocol] && transport[api.protocol].defaultPort ) || 8080;
     api.basePath = options.basePath || parsed.pathname || '/api/';
-    transport    = protocolHandlers[api.protocol].transport;
+    transport    = transport[api.protocol].transport;
     if (api.basePath.slice(-1) !== '/') api.basePath += '/';
     return transport(Object.assign({name : 'versions'}, settings, options))
       .then(catchRedirect)
