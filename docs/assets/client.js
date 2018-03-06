@@ -32532,8 +32532,7 @@ function extend() {
 }
 
 },{}],189:[function(require,module,exports){
-var ajax         = require('ajax-request'),
-    base64url    = require('base64url'),
+var base64url    = require('base64url'),
     cbq          = require('./cbq'),
     crypto       = require('crypto'),
     EC           = require('trackthis-ecdsa'),
@@ -32547,6 +32546,7 @@ var noop              = function(data){return data;},
     supportedVersions = [ 1 ],
     chosenVersion     = null,
     transport         = null,
+    scope             = {},
     rawApi            = {},
     skipManifestKeys  = [
       'baseuri','formats'
@@ -32577,72 +32577,14 @@ var noop              = function(data){return data;},
       }
     },
 
-
     /**
      * A named list of protocol handlers
      *
      * Each contains a default port (we're networking) and a transport which knows how to talk to the remote endpoint.
      */
-    transport = {
-
-      /**
-       * HTTP protocol handler
-       *
-       * The ajax-request supports both HTTP and HTTPS, so simply redirect to the HTTPS handler
-       */
-      http: {
-        defaultPort: 80,
-        transport : function( options ) {
-          if ( 'string' === typeof options ) { options = { name: options }; }
-          options = options || {};
-          if ( !options.name ) { return Promise.reject('No name given'); }
-          options.protocol = 'http';
-          options.port     = options.port || api.port || transport.http.defaultPort;
-          return transport.https.transport(options);
-        }
-      },
-
-      /**
-       * HTTPS protocol handler
-       *
-       * Converts our raw named calls into AJAX request based on settings like the hostname, port & basePath
-       */
-      https: {
-        defaultPort: 443,
-        transport  : function( options ) {
-          if ( 'string' === typeof options ) { options = { name: options }; }
-          options = options || {};
-          if ( !options.name ) { return Promise.reject('No name given'); }
-          api.basePath = api.basePath || '/';
-          if ( api.basePath.slice(-1) !== '/' ) { api.basePath += '/'; }
-          var parsed = options.url && url.parse(options.url) || {};
-          options.name     = options.name.replace(/\./g,'/');
-          options.method   = (options.method || 'get').toUpperCase();
-          options.protocol = options.protocol || parsed.protocol || api.protocol || (document && document.location && document.location.protocol);
-          if ( options.protocol.slice(-1) !== ':' ) { options.protocol += ':'; }
-          options.hostname = options.hostname || parsed.hostname || api.hostname || (document && document.location && document.location.hostname);
-          options.port     = options.port     || parsed.port     || api.port     || (document && document.location && document.location.port    );
-          options.pathname = options.pathname || ( api.basePath + ((options.name==='versions')?'':('v'+chosenVersion+'/')) + options.name + '.json' );
-          options.url      = url.format(options);
-          return new Promise(function(resolve,reject) {
-            ajax(options, function(err, res, body) {
-              var output = {
-                status : res.statusCode,
-                text   : body,
-                data   : null
-              };
-              try {
-                output.data = JSON.parse(output.text);
-              } catch(e) {
-                output.data = null;
-              }
-              if ( err ) { return reject(Object.assign({ error: err }, output)); }
-              resolve(output);
-              return undefined;
-            });
-          });
-        }
-      }
+    transports = {
+      http  : require('./transport/http'),
+      https : require('./transport/https')
     };
 
 /* Helper functions */
@@ -32689,11 +32631,17 @@ function intersect() {
  * Returns a promise which resolves if we have a transport
  * Having a transport means we're supposed to be connected to an endpoint.
  *
+ * Updates the 'this' element for the transport as well
+ *
  * @return {Promise}
  */
 function checkTransport() {
   return new Promise(function(resolve,reject) {
     if ( 'function' === typeof transport ) {
+      Object.assign(scope,api);
+      scope.chosenVersion = chosenVersion;
+      scope.settings      = settings;
+      scope.transports    = transports;
       resolve();
     } else {
       reject('The api is not connected to the remote yet');
@@ -32898,7 +32846,7 @@ var api = module.exports = {
    *
    * @returns {Promise}
    */
-  registerProtocolHandler : function (protocol, options, callback) {
+  registerTransport : function (protocol, options, callback) {
     options = options || {};
     if ('object' === typeof protocol) {
       options  = protocol;
@@ -32911,7 +32859,7 @@ var api = module.exports = {
       return Promise.reject('Transport not given or not a function');
     }
     options.defaultPort        = options.defaultPort || options.port || 80;
-    transport[protocol] = options;
+    transports[protocol] = options;
     return Promise.resolve().then('function'===(typeof callback)?callback:noop);
   },
 
@@ -32935,22 +32883,25 @@ var api = module.exports = {
     var parsed     = url.parse(options.remote);
     api.protocol   = options.protocol || parsed.protocol || 'http';
     if (api.protocol.slice(-1) === ':') api.protocol = api.protocol.slice(0, -1);
-    if (!transport[api.protocol]) return Promise.reject('Given protocol not supported');
+    if (!transports[api.protocol]) return Promise.reject('Given protocol not supported');
     api.hostname = options.hostname || parsed.hostname || 'trackthis.nl';
-    api.port     = options.port     || parsed.port     || ( transport[api.protocol] && transport[api.protocol].defaultPort ) || 8080;
+    api.port     = options.port     || parsed.port     || ( transports[api.protocol] && transports[api.protocol].defaultPort ) || 8080;
     api.basePath = options.basePath || parsed.pathname || '/api/';
-    transport    = transport[api.protocol].transport;
+    transport    = transports[api.protocol].transport.bind(scope);
     if (api.basePath.slice(-1) !== '/') api.basePath += '/';
-    return transport(Object.assign({name : 'versions'}, settings, options))
-      .then(catchRedirect)
-      .then(function (response) {
-        var serverVersions = response.data.map(function (v) {
-          return (v.substr(0, 1) === 'v') ? parseInt(v.substr(1)) : v;
-        });
-        chosenVersion = intersect(serverVersions, supportedVersions).pop();
-        if (!chosenVersion) {
-          throw 'We do not support any versions supported by the server';
-        }
+    return checkTransport()
+      .then(function() {
+        return transport(Object.assign({name : 'versions'}, settings, options))
+          .then(catchRedirect)
+          .then(function (response) {
+            var serverVersions = response.data.map(function (v) {
+              return (v.substr(0, 1) === 'v') ? parseInt(v.substr(1)) : v;
+            });
+            chosenVersion = intersect(serverVersions, supportedVersions).pop();
+            if (!chosenVersion) {
+              throw 'We do not support any versions supported by the server';
+            }
+          })
       })
       .then(('function'===(typeof callback))?callback:noop);
   },
@@ -33216,7 +33167,7 @@ var api = module.exports = {
   }
 };
 
-},{"./cbq":1,"./localstorage":190,"ajax-request":2,"base64url":20,"bluebird":21,"crypto":64,"trackthis-ecdsa":175,"url":180}],190:[function(require,module,exports){
+},{"./cbq":1,"./localstorage":190,"./transport/http":191,"./transport/https":192,"base64url":20,"bluebird":21,"crypto":64,"trackthis-ecdsa":175,"url":180}],190:[function(require,module,exports){
 module.exports = (window && window.localStorage) || {
   getItem    : function (key) {
     var nameEQ = encodeURIComponent(key) + '=';
@@ -33242,6 +33193,71 @@ module.exports = (window && window.localStorage) || {
 };
 
 },{}],191:[function(require,module,exports){
+/**
+ * HTTP protocol handler
+ *
+ * The ajax-request supports both HTTP and HTTPS, so simply redirect to the HTTPS handler
+ */
+module.exports = {
+  defaultPort : 80,
+  transport   : function (options) {
+    if ('string' === typeof options) { options = {name : options}; }
+    options = options || {};
+    if (!options.name) { return Promise.reject('No name given'); }
+    options.protocol = 'http';
+    options.port     = options.port || this.port || this.transports.http.defaultPort;
+    return this.transports.https.transport.call(this,options);
+  }
+};
+
+},{}],192:[function(require,module,exports){
+/**
+ * HTTPS protocol handler
+ *
+ * Converts our raw named calls into AJAX request based on settings like the hostname, port & basePath
+ */
+
+var ajax = require('ajax-request'),
+    url  = require('url');
+
+module.exports = {
+  defaultPort : 443,
+  transport   : function (options) {
+    if ('string' === typeof options) { options = {name : options}; }
+    options = options || {};
+    if (!options.name) { return Promise.reject('No name given'); }
+    this.basePath = this.basePath || '/';
+    if (this.basePath.slice(-1) !== '/') { this.basePath += '/'; }
+    var parsed       = options.url && url.parse(options.url) || {};
+    options.name     = options.name.replace(/\./g, '/');
+    options.method   = (options.method || 'get').toUpperCase();
+    options.protocol = options.protocol || parsed.protocol || this.protocol || (document && document.location && document.location.protocol);
+    if (options.protocol.slice(-1) !== ':') { options.protocol += ':'; }
+    options.hostname = options.hostname || parsed.hostname || this.hostname || (document && document.location && document.location.hostname);
+    options.port     = options.port || parsed.port || this.port || (document && document.location && document.location.port);
+    options.pathname = options.pathname || (this.basePath + ((options.name === 'versions') ? '' : ('v' + this.chosenVersion + '/')) + options.name + '.json');
+    options.url      = url.format(options);
+    return new Promise(function (resolve, reject) {
+      ajax(options, function (err, res, body) {
+        var output = {
+          status : res.statusCode,
+          text   : body,
+          data   : null
+        };
+        try {
+          output.data = JSON.parse(output.text);
+        } catch (e) {
+          output.data = null;
+        }
+        if (err) { return reject(Object.assign({error : err}, output)); }
+        resolve(output);
+        return undefined;
+      });
+    });
+  }
+};
+
+},{"ajax-request":2,"url":180}],193:[function(require,module,exports){
 (function (apiObject) {
   // Register to AMD or attach to the window
   if (('function' === typeof define) && define.amd) {
@@ -33253,4 +33269,4 @@ module.exports = (window && window.localStorage) || {
   }
 })(require('./index'));
 
-},{"./index":189}]},{},[191]);
+},{"./index":189}]},{},[193]);
