@@ -33067,7 +33067,8 @@ var api = module.exports = {
               // Generate the part of the token we'll sign
               token = base64url.encode(JSON.stringify({
                 "alg": "ES256",
-                "typ": "JWT"
+                "typ": "JWT",
+                "exp": Math.round((new Date()).getTime()/1000) + 300
               })) + '.' + base64url.encode(JSON.stringify({
                 username: username
               }));
@@ -33075,11 +33076,10 @@ var api = module.exports = {
               // Generate it's signature
               var rawsig = ec.sign(token);
               signature  = base64url.encode(rawsig);
-              signer     = username;
               token     += '.' + signature;
 
               // Send the request
-              return rawApi.user.getLogin({ data: { token: token, signer: signer } })
+              return rawApi.user.getLogin({ data: { token: token } })
                            .then(function(response) {
                              console.log('GENERATED-TOKEN:',token, response);
                              next();
