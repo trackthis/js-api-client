@@ -618,10 +618,16 @@ var api = module.exports = {
             // Try oauth
             function(d,next,fail) {
               if (!rawApi.oauth.getAuth) return next();
+              var usernameList = username;
+              if (Array.isArray(usernameList)) {
+                usernameList = usernameList.map(encodeURIComponent).map(function(name) {
+                  return name.replace(/,/g,'%2C');
+                }).join(',');
+              }
 
               return rawApi.oauth.getAuth({
                              data : {
-                               username      : username,
+                               account       : usernameList,
                                response_type : 'code',
                                client_id     : settings.clientId || 'APP-00',
                                redirect_uri  : settings.callback || 'http://localhost:3000/',
