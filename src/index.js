@@ -2,6 +2,7 @@ var base64url    = require('base64url'),
     cbq          = require('./cbq'),
     crypto       = require('crypto'),
     EC           = require('trackthis-ecdsa'),
+    extend       = require('extend'),
     localstorage = require('./localstorage'),
     Promise      = require('bluebird'),
     url          = require('url');
@@ -20,6 +21,7 @@ var noop              = function(data){return data;},
     settings          = {
       callback     : undefined, // Callback URL for requests
       clientId     : undefined, // Our client ID
+      clientSecret : undefined, // Our client secret
       user         : undefined, // Our logged in account
       token        : undefined, // The token we'll use for identifying ourselves
       refreshToken : undefined, // A token to refresh the main token
@@ -220,6 +222,29 @@ function ensureSignatureConfig() {
   }).then(noop);
 }
 
+function set_deep( obj, key, value, separator ) {
+  separator = separator || '.';
+  if ( 'string' === typeof key ) {
+    key = key.split(separator);
+  }
+  if (!Array.isArray(key)) {
+    return;
+  }
+  var token;
+  while(key.length) {
+    token = key.shift();
+    if ( key.length ) {
+      obj = obj[token] = obj[token] || {};
+    } else {
+      if ( obj[token] && 'object' == typeof value ) {
+        extend( obj[token], value );
+      } else {
+        obj[token] = value;
+      }
+    }
+  }
+}
+
 /**
  * Serialize (almost) any object into url-encoding
  *
@@ -242,6 +267,28 @@ function serializeObject(obj, prefix) {
              encodeURIComponent(k) + "=" + encodeURIComponent(v));
   }
   return str.join("&");
+}
+
+/**
+ * Deserialize an url-encoded object
+ *
+ * Returns the object
+ *
+ * @param {string} encoded
+ * @param {string} prefix
+ *
+ * @returns {object}
+ */
+function deserializeObject(encoded, prefix) {
+  var output = {};
+  if ( 'string' !== typeof encoded ) throw "Object could not be decoded";
+  decodeURIComponent(encoded)                                                              // "a[b]=c&a[d]=e&f=g,h"
+    .split('&')                                                                                // [ "a[b]=c", "a[d]=e', "f=g,h" ]
+    .map(function (token) { return token.split('=',2); })                                      // [ ["a[b]","c"], ["a[d]","e"], ["f","g,h"] ]
+    .map(function (token) { return [ (token[0] || '').replace(/]/g,''), token[1] || null ]; }) // [ ["a[b","c"], ["a[d","e"], ["f","g,h"] ]
+    .map(function (token) { return [ token[0].split('[') , token[1] ]; })                      // [ [["a","b"],"c"], [["a","d"],"e"], [["f"],"g,h"] ]
+    .forEach(function (token) { set_deep(output,token[0],token[1]); });                        // { a: { b: "c", d: "e" }, f: "g,h" }
+  return output;
 }
 
 function generateSecret( username, password ) {
@@ -451,13 +498,47 @@ var api = module.exports = {
           // For the resolve/reject functions
           return new Promise(function(resolve,reject) {cbq([
 
+            // Try oauth code from current query
+            function(d,next,fail) {
+              console.log(rawApi);
+              if (!rawApi.oauth.postToken) return next();
+
+              // Try to fetch the code
+              var code = false;
+              if (data.code) code = code || data.code;
+              if (window && window.location && window.location.search) {
+                var query = deserializeObject(window.location.search.slice(1));
+                code      = code || query.code || code || false;
+              }
+
+              // If we don't have a code by now, cancel
+              if (!code) return next();
+
+              return rawApi
+                .oauth.postToken({
+                  data : {
+                    grant_type    : 'authorization_code',
+                    code          : code,
+                    redirect_uri  : settings.callback     || 'http://localhost:5000/',
+                    client_id     : settings.clientId     || 'APP-00',
+                    client_secret : settings.clientSecret || '8509203eb2b2dc05d71d382bbe9cbbfe409ddd13c6827c5ca477f6251ad9d7a9',
+                  }
+                })
+                .then(catchRedirect)
+                .then(function(response) {
+                  console.log(response);
+                  // return next();
+                })
+            },
+
             // Try an existing token
             function(d,next,fail) {
               if (!rawApi.user.getLogin) return next();
               if (!data.token) return next();
 
               // Send the request
-              return rawApi.user.getLogin({data : {token : data.token, username : username}})
+              return rawApi
+                .user.getLogin({data : {token : data.token, username : username}})
                 .then(catchRedirect)
                 .then(function (response) {
                   if (response.data && response.data.token) {
@@ -489,7 +570,8 @@ var api = module.exports = {
               var tmpToken = data.token + '.' + signature;
 
               // Send the request
-              return rawApi.user.getLogin({ data: { token: tmpToken, username: username, signer: signer } })
+              return rawApi
+                .user.getLogin({ data: { token: tmpToken, username: username, signer: signer } })
                 .then(catchRedirect)
                 .then(function (response) {
                   if (response.data && response.data.token) {
@@ -515,7 +597,8 @@ var api = module.exports = {
               signature = base64url.encode(ec.sign(username));
 
               // Send the request
-              return rawApi.user.getLogin({ data: { username: username, signature: signature } })
+              return rawApi
+                .user.getLogin({ data: { username: username, signature: signature } })
                 .then(catchRedirect)
                 .then(function (response) {
                   if (response.data && response.data.token) {
@@ -552,7 +635,8 @@ var api = module.exports = {
               token     += '.' + signature;
 
               // Send the request
-              return rawApi.user.getLogin({ data: { token: token } })
+              return rawApi
+                .user.getLogin({ data: { token: token } })
                 .then(catchRedirect)
                 .then(function (response) {
                   if (response.data && response.data.token) {
@@ -566,29 +650,30 @@ var api = module.exports = {
                 });
             },
 
-            // Try oauth
+            // Try oauth init
             function(d,next,fail) {
               if (!rawApi.oauth.getAuth) return next();
               var usernameList = username;
               if (Array.isArray(usernameList)) {
-                usernameList = usernameList.map(encodeURIComponent).map(function(name) {
-                  return name.replace(/,/g,'%2C');
+                usernameList = usernameList.map(encodeURIComponent).map(function (name) {
+                  return name.replace(/,/g, '%2C');
                 }).join(',');
               }
 
-              return rawApi.oauth.getAuth({
-                             data : {
-                               account       : usernameList,
-                               response_type : 'code',
-                               client_id     : settings.clientId || 'APP-00',
-                               redirect_uri  : settings.callback || 'http://localhost:5000/',
-                               scope         : ''
-                             }
-                           })
-                           .then(catchRedirect)
-                           .then(function (response) {
-                             console.log(response);
-                           });
+              return rawApi
+                .oauth.getAuth({
+                  data : {
+                    account       : usernameList,
+                    response_type : 'code',
+                    client_id     : settings.clientId || 'APP-00',
+                    redirect_uri  : settings.callback || 'http://localhost:5000/',
+                    scope         : ''
+                  }
+                })
+                .then(catchRedirect)
+                .then(function (response) {
+                  console.log(response);
+                });
 
 
               // TODO: build this
