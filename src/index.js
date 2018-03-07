@@ -160,7 +160,6 @@ function fetchManifest(callback) {
                                 };
                                 response.text = JSON.stringify(response.data);
                                 return Promise.resolve(response);
-                                break;
                               default:
                                 options            = options            || {};
                                 options.data       = options.data       || {};
