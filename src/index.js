@@ -416,7 +416,7 @@ var api = module.exports = {
             if (!chosenVersion) {
               throw 'We do not support any versions supported by the server';
             }
-          })
+          });
       })
       .then(('function'===(typeof callback))?callback:noop);
   },
