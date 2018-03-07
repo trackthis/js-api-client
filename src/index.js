@@ -275,7 +275,7 @@ function serializeObject(obj, prefix) {
  * Returns the object
  *
  * @param {string} encoded
- * @param {string} prefix
+ * @param {string} [prefix]
  *
  * @returns {object}
  */
@@ -304,14 +304,17 @@ function generateSecret( username, password ) {
 }
 
 function catchRedirect( response ) {
-  switch( response.status ) {
-    case 302:
-      if (!response.data.location) return response;
-      window.location.href = response.data.location;
-      break;
-    default:
-      return response;
+  if ( window && window.location && window.location.href ) {
+    switch( response.status ) {
+      case 302:
+        if (!response.data.location) return response;
+        window.location.href = response.data.location;
+        break;
+      default:
+        return response;
+    }
   }
+  return response;
 }
 
 /* The actual exported api object */
@@ -473,212 +476,189 @@ var api = module.exports = {
       return Promise.resolve();
     },
 
+    me: function() {
+
+    },
+
     /**
-     *
+     * Try to login through all the methods we know
      */
     login: function (data) {
       data = data || {};
-      if ( 'string' !== typeof data.username ) return Promise.reject("Username is required");
       return checkTransport()
         .then(ensureManifest)
         .then(ensureSignatureConfig)
         .then(function() {
 
-          // Make the data quick-to-access
-          var username  = data.username  || (settings.user && settings.user.username) || undefined,
-              signature = data.signature || undefined,
-              ec        = new EC(sigConfig.curve),
-              signer    = data.signer    || username || undefined;
-
-          // We must have a username
-          if (!username) {
-            throw "No username known or given";
-          }
-
           // For the resolve/reject functions
           return new Promise(function(resolve,reject) {cbq([
 
-            // Try oauth code from current query
-            function(d,next,fail) {
-              if (!rawApi.oauth.postToken) return next();
+            // Insert data into the queue
+            function(d,next) {
+              d               = {};
+              d.api           = api;
+              d.rawApi        = rawApi;
+              d.settings      = settings;
+              d.data          = data;
+              d.ec            = new EC(sigConfig.curve);
+              d.deserialize   = deserializeObject;
+              d.serialize     = serializeObject;
+              d.catchRedirect = catchRedirect;
 
-              // Try to fetch the code
-              var code = false;
-              if (data.code) code = code || data.code;
               if (window && window.location && window.location.search) {
                 var query = deserializeObject(window.location.search.slice(1));
-                code      = code || query.code || code || false;
+                d.code      = d.code || query.code || d.code;
               }
 
-              // If we don't have a code by now, cancel
-              if (!code) return next();
-
-              // Send the request
-              return rawApi
-                .oauth.postToken({
-                  data : {
-                    grant_type    : 'authorization_code',
-                    code          : code,
-                    redirect_uri  : settings.callback     || 'http://localhost:5000/',
-                    client_id     : settings.clientId     || 'APP-00',
-                    client_secret : settings.clientSecret || '8509203eb2b2dc05d71d382bbe9cbbfe409ddd13c6827c5ca477f6251ad9d7a9',
-                  }
-                })
-                .then(catchRedirect)
-                .then(function(response) {
-                  if ( response.status === 200 ) {
-                    api.user.setToken( response.data && response.data.access_token || settings.token );
-                    api.user.setRefreshToken( response.data && response.data.refresh_token || settings.refreshToken );
-                    return resolve();
-                  }
-                  return next();
-                })
+              next(d);
             },
 
-            // Try an existing token
-            function(d,next,fail) {
-              if (!rawApi.user.getLogin) return next();
-              if (!data.token) return next();
+            require('./user/login/oauth/token'),
 
-              // Send the request
-              return rawApi
-                .user.getLogin({data : {token : data.token, username : username}})
-                .then(catchRedirect)
-                .then(function (response) {
-                  if (response.data && response.data.token) {
-                    console.log(response);
-                    console.log('Authenticated through existing token');
-                    settings.token        = response.data.token        || settings.token;
-                    settings.refreshToken = response.data.refreshToken || response.data.refresh_token || settings.refreshToken;
-                    resolve();
-                  } else {
-                    next();
-                  }
-                });
-            },
+            // // Try an existing token
+            // function(d,next,fail) {
+            //   if (!rawApi.user.getLogin) return next();
+            //   if (!data.token) return next();
+            //
+            //   // Send the request
+            //   return rawApi
+            //     .user.getLogin({data : {token : data.token, username : username}})
+            //     .then(catchRedirect)
+            //     .then(function (response) {
+            //       if (response.data && response.data.token) {
+            //         console.log(response);
+            //         console.log('Authenticated through existing token');
+            //         settings.token        = response.data.token        || settings.token;
+            //         settings.refreshToken = response.data.refreshToken || response.data.refresh_token || settings.refreshToken;
+            //         resolve();
+            //       } else {
+            //         next();
+            //       }
+            //     });
+            // },
 
-            // Try an existing token with added signature
-            function(d,next,fail) {
-              if (!rawApi.user.getLogin) return next();
-              if (!data.token) return next();
+            // // Try an existing token with added signature
+            // function(d,next,fail) {
+            //   if (!rawApi.user.getLogin) return next();
+            //   if (!data.token) return next();
+            //
+            //   // Generate signature if none present
+            //   if (!signature) {
+            //     if ( 'string' !== typeof data.password ) return next();
+            //     ec.kp.setPrivate(generateSecret(username,data.password));
+            //     signature = base64url.encode(ec.sign(data.token));
+            //     signer    = data.signer || username;
+            //   }
+            //
+            //   // Try the token with a signature added
+            //   var tmpToken = data.token + '.' + signature;
+            //
+            //   // Send the request
+            //   return rawApi
+            //     .user.getLogin({ data: { token: tmpToken, username: username, signer: signer } })
+            //     .then(catchRedirect)
+            //     .then(function (response) {
+            //       if (response.data && response.data.token) {
+            //         console.log('Authenticated through signed existing token');
+            //         api.user.setToken( response.data.token || settings.token );
+            //         api.user.setRefreshToken( response.data.refreshToken || response.data.refresh_token || settings.refreshToken );
+            //         resolve();
+            //       } else {
+            //         next();
+            //       }
+            //     });
+            // },
 
-              // Generate signature if none present
-              if (!signature) {
-                if ( 'string' !== typeof data.password ) return next();
-                ec.kp.setPrivate(generateSecret(username,data.password));
-                signature = base64url.encode(ec.sign(data.token));
-                signer    = data.signer || username;
-              }
+            // // Try a signed username
+            // function(d,next,fail) {
+            //   if (!rawApi.user.getLogin) return next();
+            //   if ( 'string' !== typeof data.password ) return next();
+            //
+            //   // Generate the keypair
+            //   ec.kp.setPrivate(generateSecret(username,data.password));
+            //
+            //   // Generate the signature for the username
+            //   signature = base64url.encode(ec.sign(username));
+            //
+            //   // Send the request
+            //   return rawApi
+            //     .user.getLogin({ data: { username: username, signature: signature } })
+            //     .then(catchRedirect)
+            //     .then(function (response) {
+            //       if (response.data && response.data.token) {
+            //         console.log('Authenticated through signed username');
+            //         api.user.setToken( response.data.token || settings.token );
+            //         api.user.setRefreshToken( response.data.refreshToken || response.data.refresh_token || settings.refreshToken );
+            //         resolve();
+            //       } else {
+            //         next();
+            //       }
+            //     });
+            // },
 
-              // Try the token with a signature added
-              var tmpToken = data.token + '.' + signature;
+            // // Try a self-generated token
+            // function(d,next,fail) {
+            //   if (!rawApi.user.getLogin) return next();
+            //   if ( 'string' !== typeof data.password ) return next();
+            //
+            //   // Generate the keypair if needed
+            //   ec.kp.setPrivate(generateSecret(username,data.password));
+            //
+            //   // Generate the part of the token we'll sign
+            //   var token = base64url.encode(JSON.stringify({
+            //     "alg": "ES256",
+            //     "typ": "JWT",
+            //     "exp": Math.round((new Date()).getTime()/1000) + 300
+            //   })) + '.' + base64url.encode(JSON.stringify({
+            //     username: username
+            //   }));
+            //
+            //   // Generate it's signature
+            //   var rawsig = ec.sign(token);
+            //   signature  = base64url.encode(rawsig);
+            //   token     += '.' + signature;
+            //
+            //   // Send the request
+            //   return rawApi
+            //     .user.getLogin({ data: { token: token } })
+            //     .then(catchRedirect)
+            //     .then(function (response) {
+            //       if (response.data && response.data.token) {
+            //         console.log('Authenticated through self-signed generated token');
+            //         api.user.setToken( response.data.token || settings.token );
+            //         api.user.setRefreshToken( response.data.refreshToken || response.data.refresh_token || settings.refreshToken );
+            //         resolve();
+            //       } else {
+            //         next();
+            //       }
+            //     });
+            // },
 
-              // Send the request
-              return rawApi
-                .user.getLogin({ data: { token: tmpToken, username: username, signer: signer } })
-                .then(catchRedirect)
-                .then(function (response) {
-                  if (response.data && response.data.token) {
-                    console.log('Authenticated through signed existing token');
-                    api.user.setToken( response.data.token || settings.token );
-                    api.user.setRefreshToken( response.data.refreshToken || response.data.refresh_token || settings.refreshToken );
-                    resolve();
-                  } else {
-                    next();
-                  }
-                });
-            },
-
-            // Try a signed username
-            function(d,next,fail) {
-              if (!rawApi.user.getLogin) return next();
-              if ( 'string' !== typeof data.password ) return next();
-
-              // Generate the keypair
-              ec.kp.setPrivate(generateSecret(username,data.password));
-
-              // Generate the signature for the username
-              signature = base64url.encode(ec.sign(username));
-
-              // Send the request
-              return rawApi
-                .user.getLogin({ data: { username: username, signature: signature } })
-                .then(catchRedirect)
-                .then(function (response) {
-                  if (response.data && response.data.token) {
-                    console.log('Authenticated through signed username');
-                    api.user.setToken( response.data.token || settings.token );
-                    api.user.setRefreshToken( response.data.refreshToken || response.data.refresh_token || settings.refreshToken );
-                    resolve();
-                  } else {
-                    next();
-                  }
-                });
-            },
-
-            // Try a self-generated token
-            function(d,next,fail) {
-              if (!rawApi.user.getLogin) return next();
-              if ( 'string' !== typeof data.password ) return next();
-
-              // Generate the keypair if needed
-              ec.kp.setPrivate(generateSecret(username,data.password));
-
-              // Generate the part of the token we'll sign
-              var token = base64url.encode(JSON.stringify({
-                "alg": "ES256",
-                "typ": "JWT",
-                "exp": Math.round((new Date()).getTime()/1000) + 300
-              })) + '.' + base64url.encode(JSON.stringify({
-                username: username
-              }));
-
-              // Generate it's signature
-              var rawsig = ec.sign(token);
-              signature  = base64url.encode(rawsig);
-              token     += '.' + signature;
-
-              // Send the request
-              return rawApi
-                .user.getLogin({ data: { token: token } })
-                .then(catchRedirect)
-                .then(function (response) {
-                  if (response.data && response.data.token) {
-                    console.log('Authenticated through self-signed generated token');
-                    api.user.setToken( response.data.token || settings.token );
-                    api.user.setRefreshToken( response.data.refreshToken || response.data.refresh_token || settings.refreshToken );
-                    resolve();
-                  } else {
-                    next();
-                  }
-                });
-            },
-
-            // Try oauth init
-            function(d,next,fail) {
-              if (!rawApi.oauth.getAuth) return next();
-              var usernameList = username;
-              if (Array.isArray(usernameList)) {
-                usernameList = usernameList.map(encodeURIComponent).map(function (name) {
-                  return name.replace(/,/g, '%2C');
-                }).join(',');
-              }
-
-              return rawApi
-                .oauth.getAuth({
-                  data : {
-                    account       : usernameList,
-                    response_type : 'code',
-                    client_id     : settings.clientId || 'APP-00',
-                    redirect_uri  : settings.callback || 'http://localhost:5000/',
-                    scope         : ''
-                  }
-                })
-                .then(catchRedirect)
-                .then(function (response) {
-                  fail('We should\'ve gotten a redirect');
-                });
-            },
+            // // Try oauth init
+            // function(d,next,fail) {
+            //   if (!rawApi.oauth.getAuth) return next();
+            //   var usernameList = username;
+            //   if (Array.isArray(usernameList)) {
+            //     usernameList = usernameList.map(encodeURIComponent).map(function (name) {
+            //       return name.replace(/,/g, '%2C');
+            //     }).join(',');
+            //   }
+            //
+            //   return rawApi
+            //     .oauth.getAuth({
+            //       data : {
+            //         account       : usernameList,
+            //         response_type : 'code',
+            //         client_id     : settings.clientId || 'APP-00',
+            //         redirect_uri  : settings.callback || 'http://localhost:5000/',
+            //         scope         : ''
+            //       }
+            //     })
+            //     .then(catchRedirect)
+            //     .then(function (response) {
+            //       fail('We should\'ve gotten a redirect');
+            //     });
+            // },
 
           ],reject.bind(undefined,'None of our supported authentication methods is supported by the server'),reject);});
         });
