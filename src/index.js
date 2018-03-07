@@ -500,7 +500,6 @@ var api = module.exports = {
 
             // Try oauth code from current query
             function(d,next,fail) {
-              console.log(rawApi);
               if (!rawApi.oauth.postToken) return next();
 
               // Try to fetch the code
@@ -514,6 +513,7 @@ var api = module.exports = {
               // If we don't have a code by now, cancel
               if (!code) return next();
 
+              // Send the request
               return rawApi
                 .oauth.postToken({
                   data : {
@@ -526,8 +526,12 @@ var api = module.exports = {
                 })
                 .then(catchRedirect)
                 .then(function(response) {
-                  console.log(response);
-                  // return next();
+                  if ( response.status === 200 ) {
+                    api.user.setToken( response.data && response.data.access_token || settings.token );
+                    api.user.setRefreshToken( response.data && response.data.refresh_token || settings.refreshToken );
+                    return resolve();
+                  }
+                  return next();
                 })
             },
 
@@ -672,45 +676,11 @@ var api = module.exports = {
                 })
                 .then(catchRedirect)
                 .then(function (response) {
-                  console.log(response);
+                  fail('We should\'ve gotten a redirect');
                 });
-
-
-              // TODO: build this
-              return next();
             },
 
-          ],console.error.bind(undefined,'None of our supported authentication methods is supported by the server'),reject);});
-
-          // if ( rawApi.user.getLogin ) {
-          //   // JWT supported
-          //
-          //   // try to pry a token out of the server
-          //   return rawApi.user.getLogin({ data: data })
-          //     .then(function(response) {
-          //       console.log('RESPONSE:',response);
-          //       if ( !response.data ) throw "Invalid data returned";
-          //     })
-          //     .catch(function() {
-          //       console.log('ARGS:', arguments);
-          //     })
-          // } else if ( rawApi.oauth.getAuth ) {
-          //   // oauth supported
-          //
-          //   // redirect the client to the login page
-          //   window.document.location = url.format({
-          //     protocol : api.protocol + ((api.protocol.slice(-1) !== ':') ? ':' : ''),
-          //     hostname : api.hostname || (document && document.location && document.location.hostname),
-          //     port     : api.port || (document && document.location && document.location.port),
-          //     pathname : ( api.basePath + 'v' + chosenVersion + '/' + 'oauth/auth' ),
-          //     query    : serializeObject(data||{})
-          //   });
-          //
-          //   // Just in case the JS engine decides to continue
-          //   return Promise.resolve();
-          // } else {
-          //   throw 'None of our supported authentication methods is supported by the server';
-          // }
+          ],reject.bind(undefined,'None of our supported authentication methods is supported by the server'),reject);});
         });
 
     }
