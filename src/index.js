@@ -299,7 +299,7 @@ function generateSecret( username, password ) {
     _hash  = _hash.substr(1);
   }
   var iterations = result + sigConfig.iterations.base;
-  return crypto.pbkdf2Sync(password, username, iterations, sigConfig.keylen, sigConfig.digest)
+  return crypto.pbkdf2Sync(password, username, iterations, sigConfig.keylen, sigConfig.digest);
 }
 
 function catchRedirect( response ) {
