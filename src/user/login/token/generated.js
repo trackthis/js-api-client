@@ -11,6 +11,7 @@ module.exports = function (d, next, fail) {
   d.ec.kp.setPrivate(d.generateSecret(d.username, d.password));
 
   // Generate the part of the token we'll sign
+  // This one expires in 5 minutes to prevent abuse
   var token = base64url.encode(JSON.stringify({
     "alg" : "ES256",
     "typ" : "JWT",
