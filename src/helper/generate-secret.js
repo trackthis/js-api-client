@@ -1,4 +1,5 @@
-var crypto = require('crypto');
+var crypto = require('crypto'),
+    EC     = require('trackthis-ecdsa');
 
 module.exports = function (scope) {
   module.exports = function generateSecret(username, password) {
