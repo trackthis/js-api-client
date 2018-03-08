@@ -1,11 +1,4 @@
-var base64url    = require('base64url'),
-    cbq          = require('./cbq'),
-    crypto       = require('crypto'),
-    EC           = require('trackthis-ecdsa'),
-    EE           = require('simple-ee'),
-    localstorage = require('./localstorage'),
-    Promise      = require('bluebird'),
-    url          = require('url');
+var EE           = require('simple-ee');
 
 // Initialize the api as an event emitter
 var api = module.exports = new EE();
@@ -17,6 +10,10 @@ var scope = require('./scope')(api);
 /* * * * * * * * * * * * * * *\
  * Initialize public methods *
 \* * * * * * * * * * * * * * */
+
+// From modules
+api.user    = require('./user')(scope);
+api.connect = require('./connect')(scope);
 
 /**
  * Sets the client id used for identifying the application to the server
@@ -66,18 +63,6 @@ api.setRedirectUri = function(uri) {
 // /* Helper functions */
 //
 //
-//
-// function generateSecret( username, password ) {
-//   var ec = new EC(sigConfig.curve);
-//   var _hash  = ec.H(username).toString('hex');
-//   var result = 0;
-//   while (_hash.length) {
-//     result = ((result * 16) + parseInt(_hash.substr(0, 1), 16)) % sigConfig.iterations.modulo;
-//     _hash  = _hash.substr(1);
-//   }
-//   var iterations = result + sigConfig.iterations.base;
-//   return crypto.pbkdf2Sync(password, username, iterations, sigConfig.keylen, sigConfig.digest);
-// }
 //
 // var api = module.exports = {
 //

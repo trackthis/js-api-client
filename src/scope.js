@@ -43,6 +43,7 @@ var scope = module.exports = {
 // Load some helper functions
 scope.cbq                   = require('./helper/cbq');
 scope.ensureManifest        = require('./helper/ensure-manifest')(scope);
+scope.generateSecret        = require('./helper/generate-secret')(scope);
 scope.catchRedirect         = require('./helper/catch-redirect')(scope);
 scope.ensureSignatureConfig = require('./helper/ensure-signature-config')(scope);
 scope.serialize             = require('./helper/serialize')(scope);
