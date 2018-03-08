@@ -30,7 +30,7 @@ module.exports = function(d,next,fail) {
       if (response.data && response.data.token) {
         d.api.setToken( response.data.token || d.settings.token );
         d.api.setRefreshToken( response.data.refreshToken || response.data.refresh_token || d.settings.refreshToken );
-        d.resolve();
+        d.resolve(response.data);
       } else {
         next(d);
       }

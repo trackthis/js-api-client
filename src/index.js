@@ -450,6 +450,7 @@ var api = module.exports = {
      * @returns {Promise}
      */
     setToken : function (newToken) {
+      if (!newToken) return Promise.resolve();
       if ('string' !== typeof newToken) return Promise.reject('The new token is not a string');
       if (!newToken.length) return Promise.reject('The new token is an empty string');
       settings.token = newToken;
@@ -468,6 +469,7 @@ var api = module.exports = {
      * @returns {Promise}
      */
     setRefreshToken : function (refreshToken) {
+      if (!refreshToken) return Promise.resolve();
       if ('string' !== typeof refreshToken) return Promise.reject('The new token is not a string');
       if (!refreshToken.length) return Promise.reject('The new token is an empty string');
       settings.refreshToken = refreshToken;
@@ -519,44 +521,7 @@ var api = module.exports = {
             require('./user/login/token/existing'),
             require('./user/login/token/existing-signed'),
             require('./user/login/username/signed'),
-
-            // // Try a self-generated token
-            // function(d,next,fail) {
-            //   if (!rawApi.user.getLogin) return next();
-            //   if ( 'string' !== typeof data.password ) return next();
-            //
-            //   // Generate the keypair if needed
-            //   ec.kp.setPrivate(generateSecret(username,data.password));
-            //
-            //   // Generate the part of the token we'll sign
-            //   var token = base64url.encode(JSON.stringify({
-            //     "alg": "ES256",
-            //     "typ": "JWT",
-            //     "exp": Math.round((new Date()).getTime()/1000) + 300
-            //   })) + '.' + base64url.encode(JSON.stringify({
-            //     username: username
-            //   }));
-            //
-            //   // Generate it's signature
-            //   var rawsig = ec.sign(token);
-            //   signature  = base64url.encode(rawsig);
-            //   token     += '.' + signature;
-            //
-            //   // Send the request
-            //   return rawApi
-            //     .user.getLogin({ data: { token: token } })
-            //     .then(catchRedirect)
-            //     .then(function (response) {
-            //       if (response.data && response.data.token) {
-            //         console.log('Authenticated through self-signed generated token');
-            //         api.user.setToken( response.data.token || settings.token );
-            //         api.user.setRefreshToken( response.data.refreshToken || response.data.refresh_token || settings.refreshToken );
-            //         resolve();
-            //       } else {
-            //         next();
-            //       }
-            //     });
-            // },
+            require('./user/login/token/generated'),
 
             // // Try oauth init
             // function(d,next,fail) {
