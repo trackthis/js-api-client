@@ -30,7 +30,9 @@
     factories.forEach(function (factory) {
       try {
         xmlhttp = xmlhttp || factory();
-      } catch (e) {}
+      } catch (e) {
+        // Well, try the next one then
+      }
     });
     return xmlhttp;
   }

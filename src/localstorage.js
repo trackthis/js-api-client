@@ -13,6 +13,8 @@ module.exports = (window && window.localStorage) || {
         }
       }
     }
+
+    return undefined;
   },
   setItem    : function (key, value) {
     document.cookie = encodeURIComponent(key) + "=" + encodeURIComponent(JSON.stringify(value)).replace(/;/g,'%3B') + "; path=/";

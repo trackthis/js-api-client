@@ -1,17 +1,19 @@
 // Try oauth code from current query
 module.exports = function(d,next,fail) {
-  if (!d.rawApi.oauth.postToken) return next(d);
+  if (!d.rawApi) { return next(d); }
+  if (!d.rawApi.oauth) { return next(d); }
+  if (!d.rawApi.oauth.postToken) { return next(d); }
 
   // Try to fetch the code
   var code = false;
-  if (d.data.code) code = code || d.data.code;
+  if (d.data.code) { code = code || d.data.code; }
   if (window && window.location && window.location.search) {
     var query = d.deserialize(window.location.search.slice(1));
     code      = code || query.code || code || false;
   }
 
   // If we don't have a code by now, cancel
-  if (!code) return next(d);
+  if (!code) { return next(d); }
 
   // Send the request
   return d.rawApi
@@ -27,7 +29,6 @@ module.exports = function(d,next,fail) {
     .then(d.catchRedirect)
     .then(function(response) {
       if ( response.status === 200 ) {
-        console.log('Authenticated through authorization_code');
         d.api.user.setToken( response.data && response.data.access_token || d.settings.token );
         d.api.user.setRefreshToken( response.data && response.data.refresh_token || d.settings.refreshToken );
         return d.resolve();
