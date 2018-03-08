@@ -25,6 +25,7 @@ var noop              = function(data){return data;},
       user         : undefined, // Our logged in account
       token        : undefined, // The token we'll use for identifying ourselves
       refreshToken : undefined, // A token to refresh the main token
+      refreshExp   : undefined, // When the token expires
       kp           : undefined  // Our keypair
     },
     sigConfig =  {
@@ -142,6 +143,8 @@ function fetchManifest(callback) {
                           if ( method === 'url' || method === 'description' ) return;
                           apiref[method.toLowerCase() + key.slice(0, 1).toUpperCase() + key.slice(1)] = function (options) {
                             var returnType = ( data[key][method] && data[key][method].return && data[key][method].return.type ) || 'Object';
+                            options = options || {};
+                            options.data = options.data || {};
                             switch(returnType) {
                               case 'Page':
                                 var protocol = api.protocol;
@@ -161,8 +164,6 @@ function fetchManifest(callback) {
                                 response.text = JSON.stringify(response.data);
                                 return Promise.resolve(response);
                               default:
-                                options            = options            || {};
-                                options.data       = options.data       || {};
                                 options.data.token = options.data.token || settings.token;
                                 return checkTransport()
                                   .then(function() {
@@ -522,32 +523,7 @@ var api = module.exports = {
             require('./user/login/token/existing-signed'),
             require('./user/login/username/signed'),
             require('./user/login/token/generated'),
-
-            // // Try oauth init
-            // function(d,next,fail) {
-            //   if (!rawApi.oauth.getAuth) return next();
-            //   var usernameList = username;
-            //   if (Array.isArray(usernameList)) {
-            //     usernameList = usernameList.map(encodeURIComponent).map(function (name) {
-            //       return name.replace(/,/g, '%2C');
-            //     }).join(',');
-            //   }
-            //
-            //   return rawApi
-            //     .oauth.getAuth({
-            //       data : {
-            //         account       : usernameList,
-            //         response_type : 'code',
-            //         client_id     : settings.clientId || 'APP-00',
-            //         redirect_uri  : settings.callback || 'http://localhost:5000/',
-            //         scope         : ''
-            //       }
-            //     })
-            //     .then(catchRedirect)
-            //     .then(function (response) {
-            //       fail('We should\'ve gotten a redirect');
-            //     });
-            // },
+            require('./user/login/oauth/auth'),
 
           ],reject.bind(undefined,'None of our supported authentication methods is supported by the server'),reject);});
         });

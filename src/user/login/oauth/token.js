@@ -30,6 +30,9 @@ module.exports = function(d,next,fail) {
       if ( response.status === 200 ) {
         d.api.user.setToken( response.data && response.data.access_token || d.settings.token );
         d.api.user.setRefreshToken( response.data && response.data.refresh_token || d.settings.refreshToken );
+        if ( response.data.expires_in && !isNaN(response.data.expires_in) ) {
+          d.settings.tokenExp = response.data.expires_in;
+        }
         return d.resolve(response.data);
       }
       return next(d);
