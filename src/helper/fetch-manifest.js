@@ -1,3 +1,5 @@
+var url = require('url');
+
 module.exports = function (scope) {
   return function fetchManifest(callback) {
     return scope

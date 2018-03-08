@@ -27116,6 +27116,8 @@ module.exports = function (scope) {
 };
 
 },{"trackthis-ecdsa":173}],193:[function(require,module,exports){
+var url = require('url');
+
 module.exports = function (scope) {
   return function fetchManifest(callback) {
     return scope
@@ -27181,7 +27183,7 @@ module.exports = function (scope) {
   };
 };
 
-},{}],194:[function(require,module,exports){
+},{"url":178}],194:[function(require,module,exports){
 var crypto = require('crypto');
 
 module.exports = function (scope) {
@@ -27524,61 +27526,62 @@ api.setRedirectUri = function(uri) {
 // };
 
 },{"./connect":187,"./scope":200,"./user":204,"simple-ee":165}],200:[function(require,module,exports){
-module.exports = function(api) {
+module.exports = function (api) {
 
-};
-
-// The variables that we can 'initialize' to a default without other modules
-var scope = module.exports = {
-  api               : api,
-  rawApi            : {}, // The actual calls, built by the manifest,
-  supportedVersions : [1],
-  skipManifestKeys  : [
-    'baseuri', 'formats'
-  ],
-  chosenVersion     : null,
-  protocol          : 'https',
-  hostname          : null,
-  port              : null,
-  basePath          : null,
-  transport         : null,
-  transports        : require('./transport'),
-  redirect_uri      : undefined,
-  client_id         : undefined,
-  client_secret     : undefined,
-  token             : undefined,
-  refresh_token     : undefined,
-  user              : undefined,
-  keypair           : undefined,
-  ec                : undefined,
-  signature         : {
-    pubkey     : undefined, // the server's public key,
-    curve      : 'secp256k1',
-    label      : 'ecdsa-sha2-secp256k1',
-    keylen     : 32,
-    digest     : 'sha256',
-    format     : 'base64',
-    iterations : {
-      base   : 1000,
-      hash   : 'sha256',
-      modulo : 9000
+  // The variables that we can 'initialize' to a default without other modules
+  var scope = {
+    api               : api,
+    rawApi            : {}, // The actual calls, built by the manifest,
+    supportedVersions : [1],
+    skipManifestKeys  : [
+      'baseuri', 'formats'
+    ],
+    chosenVersion     : null,
+    protocol          : 'https',
+    hostname          : null,
+    port              : null,
+    basePath          : null,
+    transport         : null,
+    transports        : require('./transport'),
+    redirect_uri      : undefined,
+    client_id         : undefined,
+    client_secret     : undefined,
+    token             : undefined,
+    refresh_token     : undefined,
+    user              : undefined,
+    keypair           : undefined,
+    ec                : undefined,
+    signature         : {
+      pubkey     : undefined, // the server's public key,
+      curve      : 'secp256k1',
+      label      : 'ecdsa-sha2-secp256k1',
+      keylen     : 32,
+      digest     : 'sha256',
+      format     : 'base64',
+      iterations : {
+        base   : 1000,
+        hash   : 'sha256',
+        modulo : 9000
+      }
     }
-  }
-};
+  };
 
-// Load some helper functions
-scope.cbq                   = require('./helper/cbq');
-scope.ensureManifest        = require('./helper/ensure-manifest')(scope);
-scope.generateSecret        = require('./helper/generate-secret')(scope);
-scope.catchRedirect         = require('./helper/catch-redirect')(scope);
-scope.ensureSignatureConfig = require('./helper/ensure-signature-config')(scope);
-scope.serialize             = require('./helper/serialize')(scope);
-scope.deserialize           = require('./helper/deserialize')(scope);
-scope.noop                  = require('./helper/noop')(scope);
-scope.set_deep              = require('./helper/set-deep')(scope);
-scope.intersect             = require('./helper/intersect')(scope);
-scope.checkTransport        = require('./helper/check-transport')(scope);
-scope.fetchManifest         = require('./helper/fetch-manifest')(scope);
+  // Load some helper functions
+  scope.cbq                   = require('./helper/cbq');
+  scope.ensureManifest        = require('./helper/ensure-manifest')(scope);
+  scope.generateSecret        = require('./helper/generate-secret')(scope);
+  scope.catchRedirect         = require('./helper/catch-redirect')(scope);
+  scope.ensureSignatureConfig = require('./helper/ensure-signature-config')(scope);
+  scope.serialize             = require('./helper/serialize')(scope);
+  scope.deserialize           = require('./helper/deserialize')(scope);
+  scope.noop                  = require('./helper/noop')(scope);
+  scope.set_deep              = require('./helper/set-deep')(scope);
+  scope.intersect             = require('./helper/intersect')(scope);
+  scope.checkTransport        = require('./helper/check-transport')(scope);
+  scope.fetchManifest         = require('./helper/fetch-manifest')(scope);
+
+  return scope;
+};
 
 },{"./helper/catch-redirect":188,"./helper/cbq":1,"./helper/check-transport":189,"./helper/deserialize":190,"./helper/ensure-manifest":191,"./helper/ensure-signature-config":192,"./helper/fetch-manifest":193,"./helper/generate-secret":194,"./helper/intersect":195,"./helper/noop":196,"./helper/serialize":197,"./helper/set-deep":198,"./transport":203}],201:[function(require,module,exports){
 /**
