@@ -7,6 +7,7 @@
   }
 
   // Register to AMD or attach to the window
+  /** global: define */
   if (('function' === typeof define) && define.amd) {
     define([], function () {
       return result;
@@ -16,6 +17,8 @@
   }
 })(function () {
   var factories = [
+    /** global: XMLHttpRequest */
+    /** global: ActiveXObject */
     function () {return new XMLHttpRequest();},
     function () {return new ActiveXObject("Msxml2.XMLHTTP");},
     function () {return new ActiveXObject("Msxml3.XMLHTTP");},
@@ -27,26 +30,24 @@
     factories.forEach(function (factory) {
       try {
         xmlhttp = xmlhttp || factory();
-      } catch (e) {
-        return;
-      }
+      } catch (e) {}
     });
     return xmlhttp;
   }
 
   return function( uri, cb ) {
     var req = httpObject();
-    if(!req) return;
+    if(!req) { return; }
     req.open('GET',uri,true);
     req.onreadystatechange = function() {
-      if(req.readyState!==4) return;
+      if(req.readyState!==4) { return; }
       var response = {
         status : req.status,
         text   : req.responseText,
         data   : undefined
       };
       try {
-        response.data = JSON.parse(reponse.text);
+        response.data = JSON.parse(response.text);
       } catch(e) {
         response.data = undefined;
       }
