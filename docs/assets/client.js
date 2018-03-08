@@ -33280,6 +33280,7 @@ module.exports = function(d,next,fail) {
 
   // Convert the username(s) into csv
   if (Array.isArray(d.username)) {
+    /** global: encodeURIComponent */
     d.username = d.username.map(encodeURIComponent).map(function(name) {
       return name.replace(/,/g, '%2C');
     }).join(',');
@@ -33397,7 +33398,6 @@ module.exports = function(d,next,fail) {
     .then(d.catchRedirect)
     .then(function (response) {
       if (response.data && response.data.token) {
-        console.log('Authenticated through existing token');
         d.api.user.setToken( response.data.token || d.settings.token );
         d.api.user.setRefreshToken( response.data.refreshToken || response.data.refresh_token || d.settings.refreshToken );
         d.resolve(response.data);
@@ -33484,6 +33484,7 @@ module.exports = function(d,next,fail) {
 },{"base64url":20}],200:[function(require,module,exports){
 (function (apiObject) {
   // Register to AMD or attach to the window
+  /** global: define */
   if (('function' === typeof define) && define.amd) {
     define([], function () {
       return apiObject;

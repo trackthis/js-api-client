@@ -10,7 +10,6 @@ module.exports = function(d,next,fail) {
     .then(d.catchRedirect)
     .then(function (response) {
       if (response.data && response.data.token) {
-        console.log('Authenticated through existing token');
         d.api.user.setToken( response.data.token || d.settings.token );
         d.api.user.setRefreshToken( response.data.refreshToken || response.data.refresh_token || d.settings.refreshToken );
         d.resolve(response.data);

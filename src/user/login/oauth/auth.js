@@ -5,6 +5,7 @@ module.exports = function(d,next,fail) {
 
   // Convert the username(s) into csv
   if (Array.isArray(d.username)) {
+    /** global: encodeURIComponent */
     d.username = d.username.map(encodeURIComponent).map(function(name) {
       return name.replace(/,/g, '%2C');
     }).join(',');
