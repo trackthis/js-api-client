@@ -33116,54 +33116,30 @@ var api = module.exports = {
 
             // Insert data into the queue
             function(d,next) {
-              next({
-                api           : api,
-                rawApi        : rawApi,
-                settings      : settings,
-                data          : data,
-                ec            : new EC(sigConfig.curve),
-                resolve       : resolve,
-                reject        : reject,
-                deserialize   : deserializeObject,
-                serialize     : serializeObject,
-                catchRedirect : catchRedirect
-              });
+              var user     = data.username || data.user || data.usr || data.account || data.acc || false,
+                  username = ( user && user.username ) || ( user && user.name ) || user || undefined,
+                  password = data.password || data.pass || data.passwd || data.pwd  || data.pw || undefined;
+              d = {
+                api            : api,
+                rawApi         : rawApi,
+                settings       : settings,
+                data           : data,
+                ec             : new EC(sigConfig.curve),
+                resolve        : resolve,
+                reject         : reject,
+                deserialize    : deserializeObject,
+                serialize      : serializeObject,
+                catchRedirect  : catchRedirect,
+                generateSecret : generateSecret,
+                username       : username,
+                password       : password
+              };
+              next(d);
             },
 
             require('./user/login/oauth/token'),
             require('./user/login/token/existing'),
-
-            // // Try an existing token with added signature
-            // function(d,next,fail) {
-            //   if (!rawApi.user.getLogin) return next();
-            //   if (!data.token) return next();
-            //
-            //   // Generate signature if none present
-            //   if (!signature) {
-            //     if ( 'string' !== typeof data.password ) return next();
-            //     ec.kp.setPrivate(generateSecret(username,data.password));
-            //     signature = base64url.encode(ec.sign(data.token));
-            //     signer    = data.signer || username;
-            //   }
-            //
-            //   // Try the token with a signature added
-            //   var tmpToken = data.token + '.' + signature;
-            //
-            //   // Send the request
-            //   return rawApi
-            //     .user.getLogin({ data: { token: tmpToken, username: username, signer: signer } })
-            //     .then(catchRedirect)
-            //     .then(function (response) {
-            //       if (response.data && response.data.token) {
-            //         console.log('Authenticated through signed existing token');
-            //         api.user.setToken( response.data.token || settings.token );
-            //         api.user.setRefreshToken( response.data.refreshToken || response.data.refresh_token || settings.refreshToken );
-            //         resolve();
-            //       } else {
-            //         next();
-            //       }
-            //     });
-            // },
+            require('./user/login/token/existing-signed'),
 
             // // Try a signed username
             // function(d,next,fail) {
@@ -33264,7 +33240,7 @@ var api = module.exports = {
   }
 };
 
-},{"./cbq":1,"./localstorage":191,"./transport/http":192,"./transport/https":193,"./user/login/oauth/token":194,"./user/login/token/existing":195,"base64url":20,"bluebird":21,"crypto":64,"extend":93,"trackthis-ecdsa":176,"url":181}],191:[function(require,module,exports){
+},{"./cbq":1,"./localstorage":191,"./transport/http":192,"./transport/https":193,"./user/login/oauth/token":194,"./user/login/token/existing":196,"./user/login/token/existing-signed":195,"base64url":20,"bluebird":21,"crypto":64,"extend":93,"trackthis-ecdsa":176,"url":181}],191:[function(require,module,exports){
 module.exports = (window && window.localStorage) || {
   getItem    : function (key) {
     var nameEQ = encodeURIComponent(key) + '=';
@@ -33390,6 +33366,7 @@ module.exports = function(d,next,fail) {
     .then(d.catchRedirect)
     .then(function(response) {
       if ( response.status === 200 ) {
+        console.log('Authenticated through authorization_code');
         d.api.user.setToken( response.data && response.data.access_token || d.settings.token );
         d.api.user.setRefreshToken( response.data && response.data.refresh_token || d.settings.refreshToken );
         return d.resolve();
@@ -33399,6 +33376,47 @@ module.exports = function(d,next,fail) {
 };
 
 },{}],195:[function(require,module,exports){
+var base64url = require('base64url');
+
+// Try an existing token
+module.exports = function(d,next,fail) {
+  if (!d.rawApi.user.getLogin) return next(d);
+  if (!d.data) return next(d);
+  if (!d.data.token) return next(d);
+
+  // Fetch the signature & it's signer
+  var signature = d.signature   || d.data.signature || undefined,
+      signer    = d.data.signer || d.username       || undefined;
+
+  // Generate signature if none present
+  if (!signature) {
+    if ( 'string' !== typeof d.username ) return next(d);
+    if ( 'string' !== typeof d.password ) return next(d);
+    d.ec.kp.setPrivate(d.generateSecret(d.username,d.password));
+    signature = base64url.encode(d.ec.sign(d.data.token));
+    signer    = d.data.signer || d.username;
+  }
+
+  // Add the signature to the token
+  var tmpToken = d.data.token + '.' + signature;
+
+  // Send the request
+  return d.rawApi
+    .user.getLogin({data : {token : tmpToken, username : d.username, signer: signer }})
+    .then(d.catchRedirect)
+    .then(function (response) {
+      if (response.data && response.data.token) {
+        console.log('Authenticated through signed existing token');
+        d.api.setToken( response.data.token || d.settings.token );
+        d.api.setRefreshToken( response.data.refreshToken || response.data.refresh_token || d.settings.refreshToken );
+        d.resolve();
+      } else {
+        next(d);
+      }
+    });
+};
+
+},{"base64url":20}],196:[function(require,module,exports){
 // Try an existing token
 module.exports = function(d,next,fail) {
   if (!d.rawApi.user.getLogin) return next(d);
@@ -33411,7 +33429,6 @@ module.exports = function(d,next,fail) {
     .then(d.catchRedirect)
     .then(function (response) {
       if (response.data && response.data.token) {
-        console.log(response);
         console.log('Authenticated through existing token');
         d.api.setToken( response.data.token || d.settings.token );
         d.api.setRefreshToken( response.data.refreshToken || response.data.refresh_token || d.settings.refreshToken );
@@ -33422,7 +33439,7 @@ module.exports = function(d,next,fail) {
     });
 };
 
-},{}],196:[function(require,module,exports){
+},{}],197:[function(require,module,exports){
 (function (apiObject) {
   // Register to AMD or attach to the window
   if (('function' === typeof define) && define.amd) {
@@ -33434,4 +33451,4 @@ module.exports = function(d,next,fail) {
   }
 })(require('./index'));
 
-},{"./index":190}]},{},[196]);
+},{"./index":190}]},{},[197]);

@@ -494,54 +494,30 @@ var api = module.exports = {
 
             // Insert data into the queue
             function(d,next) {
-              next({
-                api           : api,
-                rawApi        : rawApi,
-                settings      : settings,
-                data          : data,
-                ec            : new EC(sigConfig.curve),
-                resolve       : resolve,
-                reject        : reject,
-                deserialize   : deserializeObject,
-                serialize     : serializeObject,
-                catchRedirect : catchRedirect
-              });
+              var user     = data.username || data.user || data.usr || data.account || data.acc || false,
+                  username = ( user && user.username ) || ( user && user.name ) || user || undefined,
+                  password = data.password || data.pass || data.passwd || data.pwd  || data.pw || undefined;
+              d = {
+                api            : api,
+                rawApi         : rawApi,
+                settings       : settings,
+                data           : data,
+                ec             : new EC(sigConfig.curve),
+                resolve        : resolve,
+                reject         : reject,
+                deserialize    : deserializeObject,
+                serialize      : serializeObject,
+                catchRedirect  : catchRedirect,
+                generateSecret : generateSecret,
+                username       : username,
+                password       : password
+              };
+              next(d);
             },
 
             require('./user/login/oauth/token'),
             require('./user/login/token/existing'),
-
-            // // Try an existing token with added signature
-            // function(d,next,fail) {
-            //   if (!rawApi.user.getLogin) return next();
-            //   if (!data.token) return next();
-            //
-            //   // Generate signature if none present
-            //   if (!signature) {
-            //     if ( 'string' !== typeof data.password ) return next();
-            //     ec.kp.setPrivate(generateSecret(username,data.password));
-            //     signature = base64url.encode(ec.sign(data.token));
-            //     signer    = data.signer || username;
-            //   }
-            //
-            //   // Try the token with a signature added
-            //   var tmpToken = data.token + '.' + signature;
-            //
-            //   // Send the request
-            //   return rawApi
-            //     .user.getLogin({ data: { token: tmpToken, username: username, signer: signer } })
-            //     .then(catchRedirect)
-            //     .then(function (response) {
-            //       if (response.data && response.data.token) {
-            //         console.log('Authenticated through signed existing token');
-            //         api.user.setToken( response.data.token || settings.token );
-            //         api.user.setRefreshToken( response.data.refreshToken || response.data.refresh_token || settings.refreshToken );
-            //         resolve();
-            //       } else {
-            //         next();
-            //       }
-            //     });
-            // },
+            require('./user/login/token/existing-signed'),
 
             // // Try a signed username
             // function(d,next,fail) {

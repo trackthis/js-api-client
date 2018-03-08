@@ -27,6 +27,7 @@ module.exports = function(d,next,fail) {
     .then(d.catchRedirect)
     .then(function(response) {
       if ( response.status === 200 ) {
+        console.log('Authenticated through authorization_code');
         d.api.user.setToken( response.data && response.data.access_token || d.settings.token );
         d.api.user.setRefreshToken( response.data && response.data.refresh_token || d.settings.refreshToken );
         return d.resolve();
