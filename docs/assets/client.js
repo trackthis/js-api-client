@@ -30692,7 +30692,7 @@ hash.hmac = function( algo, msg, key ) {
   if ( key.length > s.length ) {
     key = H(key);
   } else {
-    Buffer.concat([key,Z],s.length);
+    Buffer.concat([Buffer.from(key),Z],s.length);
   }
   var ipad = new Buffer(s.length),
       opad = new Buffer(s.length);
@@ -30700,7 +30700,7 @@ hash.hmac = function( algo, msg, key ) {
     ipad[i] = key[i] ^ 0x36;
     opad[i] = key[i] ^ 0x5C;
   }
-  return H(opad.concat(H(ipad.concat(msg))));
+  return H(Buffer.concat([opad,H(Buffer.concat([ipad,Buffer.from(msg)]))]));
 };
 
 hash.sha256 = function( data ) {
@@ -30719,12 +30719,20 @@ var Key = module.exports = function( initialData ) {
 
 // Supports PEM & SSH formats
 Key.from = function( encodedData ) {
+  if ( encodedData.data ) {
+    encodedData = encodedData.data;
+  }
   if (Buffer.isBuffer(encodedData)) {
     return new Key(encodedData);
   }
+  if ( 'string' !== typeof encodedData ) {
+    return new Key();
+  }
+  encodedData = encodedData.split('\r\n').join('\n');
+  encodedData = encodedData.split('\r').join('\n');
   var re         = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})$/,
       key        = new Key(),
-      tokens     = value.split('\n').filter(function (line) {
+      tokens     = encodedData.split('\n').filter(function (line) {
     return line.substr(0, 1) !== '-';
   }).join('').split(' ');
   if ( tokens.length >= 3 ) {
@@ -30802,7 +30810,13 @@ KeyPair.prototype.generate = function() {
 };
 
 KeyPair.prototype.setPublic = function(data) {
-  this.pub = Key.from(data);
+  if ( ( data instanceof KeyPair ) ) {
+    this.pub = Key.from(data.getPublic());
+  } else if ( data.pub ) {
+    this.pub = Key.from(data.pub);
+  } else {
+    this.pub = Key.from(data);
+  }
 };
 
 KeyPair.prototype.getPublic = function( private_key ) {
@@ -30821,7 +30835,13 @@ KeyPair.prototype.getPublic = function( private_key ) {
 };
 
 KeyPair.prototype.setPrivate = function(data) {
-  this.pri = Key.from(data);
+  if ( data instanceof KeyPair ) {
+    this.pri = Key.from(data.getPrivate());
+  } else if ( data.pri ) {
+    this.pri = Key.from(data.pri);
+  } else {
+    this.pri = Key.from(data);
+  }
 };
 
 KeyPair.prototype.getPrivate = function() {
@@ -33341,8 +33361,7 @@ module.exports = {
 },{"ajax-request":2,"url":181}],194:[function(require,module,exports){
 // Try oauth code from current query
 module.exports = function(d,next,fail) {
-  if (!d.rawApi) { return next(d); }
-  if (!d.rawApi.oauth) { return next(d); }
+  if (!d) { return fail('No data passed'); }
   if (!d.rawApi.oauth.postToken) { return next(d); }
 
   // Try to fetch the code
@@ -33382,11 +33401,9 @@ module.exports = function(d,next,fail) {
 var base64url = require('base64url');
 
 // Try an existing token
-module.exports = function(d,next) {
-  if (!d.rawApi) { return next(d); }
-  if (!d.rawApi.user) { return next(d); }
+module.exports = function(d,next,fail) {
+  if (!d) { return fail('No data passed'); }
   if (!d.rawApi.user.getLogin) { return next(d); }
-  if (!d.data) { return next(d); }
   if (!d.data.token) { return next(d); }
 
   // Fetch the signature & it's signer
@@ -33423,9 +33440,9 @@ module.exports = function(d,next) {
 },{"base64url":20}],196:[function(require,module,exports){
 // Try an existing token
 module.exports = function(d,next,fail) {
-  if (!d.rawApi.user.getLogin) return next(d);
-  if (!d.data) return next(d);
-  if (!d.data.token) return next(d);
+  if (!d) { return fail('No data passed'); }
+  if (!d.rawApi.user.getLogin) { return next(d); }
+  if (!d.data.token) { return next(d); }
 
   // Send the request
   return d.rawApi

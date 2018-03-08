@@ -1,7 +1,6 @@
 // Try oauth code from current query
 module.exports = function(d,next,fail) {
-  if (!d.rawApi) { return next(d); }
-  if (!d.rawApi.oauth) { return next(d); }
+  if (!d) { return fail('No data passed'); }
   if (!d.rawApi.oauth.postToken) { return next(d); }
 
   // Try to fetch the code

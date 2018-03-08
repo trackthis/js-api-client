@@ -1,11 +1,9 @@
 var base64url = require('base64url');
 
 // Try an existing token
-module.exports = function(d,next) {
-  if (!d.rawApi) { return next(d); }
-  if (!d.rawApi.user) { return next(d); }
+module.exports = function(d,next,fail) {
+  if (!d) { return fail('No data passed'); }
   if (!d.rawApi.user.getLogin) { return next(d); }
-  if (!d.data) { return next(d); }
   if (!d.data.token) { return next(d); }
 
   // Fetch the signature & it's signer

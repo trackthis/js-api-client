@@ -1,8 +1,8 @@
 // Try an existing token
 module.exports = function(d,next,fail) {
-  if (!d.rawApi.user.getLogin) return next(d);
-  if (!d.data) return next(d);
-  if (!d.data.token) return next(d);
+  if (!d) { return fail('No data passed'); }
+  if (!d.rawApi.user.getLogin) { return next(d); }
+  if (!d.data.token) { return next(d); }
 
   // Send the request
   return d.rawApi
