@@ -1,1 +1,0 @@
-../docs/assets/cbq.js

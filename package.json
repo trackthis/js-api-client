@@ -17,6 +17,7 @@
     "ajax-request": "^1.2.3",
     "base64url": "^2.0.0",
     "bluebird": "^3.5.1",
+    "simple-ee": "^0.2.3",
     "trackthis-ecdsa": "^1.2.5"
   },
   "devDependencies": {
