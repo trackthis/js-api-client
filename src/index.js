@@ -518,33 +518,7 @@ var api = module.exports = {
             require('./user/login/oauth/token'),
             require('./user/login/token/existing'),
             require('./user/login/token/existing-signed'),
-
-            // // Try a signed username
-            // function(d,next,fail) {
-            //   if (!rawApi.user.getLogin) return next();
-            //   if ( 'string' !== typeof data.password ) return next();
-            //
-            //   // Generate the keypair
-            //   ec.kp.setPrivate(generateSecret(username,data.password));
-            //
-            //   // Generate the signature for the username
-            //   signature = base64url.encode(ec.sign(username));
-            //
-            //   // Send the request
-            //   return rawApi
-            //     .user.getLogin({ data: { username: username, signature: signature } })
-            //     .then(catchRedirect)
-            //     .then(function (response) {
-            //       if (response.data && response.data.token) {
-            //         console.log('Authenticated through signed username');
-            //         api.user.setToken( response.data.token || settings.token );
-            //         api.user.setRefreshToken( response.data.refreshToken || response.data.refresh_token || settings.refreshToken );
-            //         resolve();
-            //       } else {
-            //         next();
-            //       }
-            //     });
-            // },
+            require('./user/login/username/signed'),
 
             // // Try a self-generated token
             // function(d,next,fail) {
