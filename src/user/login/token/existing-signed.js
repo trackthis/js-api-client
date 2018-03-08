@@ -28,8 +28,8 @@ module.exports = function(d,next,fail) {
     .then(d.catchRedirect)
     .then(function (response) {
       if (response.data && response.data.token) {
-        d.api.setToken( response.data.token || d.settings.token );
-        d.api.setRefreshToken( response.data.refreshToken || response.data.refresh_token || d.settings.refreshToken );
+        d.api.user.setToken( response.data.token || d.settings.token );
+        d.api.user.setRefreshToken( response.data.refreshToken || response.data.refresh_token || d.settings.refreshToken );
         d.resolve(response.data);
       } else {
         next(d);
