@@ -1,8 +1,8 @@
 // Try an existing token
 module.exports = function(d,next,fail) {
-  if (!d.rawApi.user.getLogin) return next();
-  if (!d.data) return next();
-  if (!d.data.token) return next();
+  if (!d.rawApi.user.getLogin) return next(d);
+  if (!d.data) return next(d);
+  if (!d.data.token) return next(d);
 
   // Send the request
   return d.rawApi
@@ -14,9 +14,9 @@ module.exports = function(d,next,fail) {
         console.log('Authenticated through existing token');
         d.api.setToken( response.data.token || d.settings.token );
         d.api.setRefreshToken( response.data.refreshToken || response.data.refresh_token || d.settings.refreshToken );
-        resolve();
+        d.resolve();
       } else {
-        next();
+        next(d);
       }
     });
 };
