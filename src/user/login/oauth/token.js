@@ -1,6 +1,6 @@
 // Try oauth code from current query
 module.exports = function(d,next,fail) {
-  if (!d.rawApi.oauth.postToken) return next();
+  if (!d.rawApi.oauth.postToken) return next(d);
 
   // Try to fetch the code
   var code = false;
@@ -11,7 +11,7 @@ module.exports = function(d,next,fail) {
   }
 
   // If we don't have a code by now, cancel
-  if (!code) return next();
+  if (!code) return next(d);
 
   // Send the request
   return d.rawApi
@@ -29,8 +29,8 @@ module.exports = function(d,next,fail) {
       if ( response.status === 200 ) {
         d.api.user.setToken( response.data && response.data.access_token || d.settings.token );
         d.api.user.setRefreshToken( response.data && response.data.refresh_token || d.settings.refreshToken );
-        return resolve();
+        return d.resolve();
       }
-      return next();
+      return next(d);
     });
 };

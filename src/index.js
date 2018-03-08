@@ -500,6 +500,8 @@ var api = module.exports = {
                 settings      : settings,
                 data          : data,
                 ec            : new EC(sigConfig.curve),
+                resolve       : resolve,
+                reject        : reject,
                 deserialize   : deserializeObject,
                 serialize     : serializeObject,
                 catchRedirect : catchRedirect
@@ -507,28 +509,7 @@ var api = module.exports = {
             },
 
             require('./user/login/oauth/token'),
-
-            // // Try an existing token
-            // function(d,next,fail) {
-            //   if (!rawApi.user.getLogin) return next();
-            //   if (!data.token) return next();
-            //
-            //   // Send the request
-            //   return rawApi
-            //     .user.getLogin({data : {token : data.token, username : username}})
-            //     .then(catchRedirect)
-            //     .then(function (response) {
-            //       if (response.data && response.data.token) {
-            //         console.log(response);
-            //         console.log('Authenticated through existing token');
-            //         settings.token        = response.data.token        || settings.token;
-            //         settings.refreshToken = response.data.refreshToken || response.data.refresh_token || settings.refreshToken;
-            //         resolve();
-            //       } else {
-            //         next();
-            //       }
-            //     });
-            // },
+            require('./user/login/token/existing'),
 
             // // Try an existing token with added signature
             // function(d,next,fail) {
