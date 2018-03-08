@@ -32777,12 +32777,12 @@ function fetchManifest(callback) {
       (function processManifest(data, apiref, path) {
         Object.keys(data)
               .forEach(function(key) {
-                if (skipManifestKeys.indexOf(key)>=0) return;
-                if('object'!==(typeof data[key])) return;
+                if (skipManifestKeys.indexOf(key)>=0) { return; }
+                if('object'!==(typeof data[key])) { return; }
                 if ( data[key].url ) {
                   Object.keys(data[key])
                         .forEach(function(method) {
-                          if ( method === 'url' || method === 'description' ) return;
+                          if ( method === 'url' || method === 'description' ) { return; }
                           apiref[method.toLowerCase() + key.slice(0, 1).toUpperCase() + key.slice(1)] = function (options) {
                             var returnType = ( data[key][method] && data[key][method].return && data[key][method].return.type ) || 'Object';
                             options = options || {};
@@ -32790,7 +32790,7 @@ function fetchManifest(callback) {
                             switch(returnType) {
                               case 'Page':
                                 var protocol = api.protocol;
-                                if (['http','https'].indexOf(protocol) < 0) protocol = 'http';
+                                if (['http','https'].indexOf(protocol) < 0) { protocol = 'http'; }
                                 protocol += ':';
                                 var uri = url.format({
                                   protocol : protocol,
@@ -32837,8 +32837,8 @@ function fetchManifest(callback) {
  */
 function ensureManifest() {
   return new Promise(function(resolve) {
-    if ( Object.keys(rawApi).length ) return resolve();
-    fetchManifest(resolve);
+    if ( Object.keys(rawApi).length ) { return resolve(); }
+    return fetchManifest(resolve);
   }).then(noop);
 }
 
@@ -32849,8 +32849,8 @@ function ensureManifest() {
  */
 function ensureSignatureConfig() {
   return new Promise(function(resolve) {
-    if ( sigConfig.pubkey ) return resolve();
-    ensureManifest()
+    if ( sigConfig.pubkey ) { return resolve(); }
+    return ensureManifest()
       .then(rawApi.signature.getConfig)
       .then(function(response) {
         sigConfig.curve     = response.data.curve      || sigConfig.curve;
@@ -32900,9 +32900,9 @@ function set_deep( obj, key, value, separator ) {
 function serializeObject(obj, prefix) {
   var str = [], p;
   for (p in obj) {
-    if (!obj.hasOwnProperty(p)) continue;
-    if ('undefined' === typeof obj[p]) continue;
-    if ( ('string' === typeof obj[p]) && (!obj[p].length)) continue;
+    if (!obj.hasOwnProperty(p)) { continue; }
+    if ('undefined' === typeof obj[p]) { continue; }
+    if ( ('string' === typeof obj[p]) && (!obj[p].length)) { continue; }
     var k = prefix ? prefix + "[" + p + "]" : p, v = obj[p];
     str.push((v !== null && typeof v === "object") ?
              serializeObject(v, k) :
@@ -32917,14 +32917,13 @@ function serializeObject(obj, prefix) {
  * Returns the object
  *
  * @param {string} encoded
- * @param {string} [prefix]
  *
  * @returns {object}
  */
-function deserializeObject(encoded, prefix) {
+function deserializeObject(encoded) {
   var output = {};
-  if ( 'string' !== typeof encoded ) throw "Object could not be decoded";
-  decodeURIComponent(encoded)                                                              // "a[b]=c&a[d]=e&f=g,h"
+  if ( 'string' !== typeof encoded ) { throw "Object could not be decoded"; }
+  decodeURIComponent(encoded)                                                                  // "a[b]=c&a[d]=e&f=g,h"
     .split('&')                                                                                // [ "a[b]=c", "a[d]=e', "f=g,h" ]
     .map(function (token) { return token.split('=',2); })                                      // [ ["a[b]","c"], ["a[d]","e"], ["f","g,h"] ]
     .map(function (token) { return [ (token[0] || '').replace(/]/g,''), token[1] || null ]; }) // [ ["a[b","c"], ["a[d","e"], ["f","g,h"] ]
@@ -32949,7 +32948,7 @@ function catchRedirect( response ) {
   if ( window && window.location && window.location.href ) {
     switch( response.status ) {
       case 302:
-        if (!response.data.location) return response;
+        if (!response.data.location) { return response; }
         window.location.href = response.data.location;
         break;
       default:
@@ -33036,17 +33035,17 @@ var api = module.exports = {
     if ('function' === typeof options) { callback = options ; options = {} ; }
     if ('string'   === typeof options) options = { remote: options };
     options = options || {};
-    if ('object' !== typeof options) throw "Given options was neither a string, an object or undefined";
+    if ('object' !== typeof options) { throw "Given options was neither a string, an object or undefined"; }
     options.remote = options.remote || 'https://trackthis.nl/api';
     var parsed     = url.parse(options.remote);
     api.protocol   = options.protocol || parsed.protocol || 'http';
-    if (api.protocol.slice(-1) === ':') api.protocol = api.protocol.slice(0, -1);
-    if (!transports[api.protocol]) return Promise.reject('Given protocol not supported');
+    if (api.protocol.slice(-1) === ':') { api.protocol = api.protocol.slice(0, -1); }
+    if (!transports[api.protocol]) { return Promise.reject('Given protocol not supported'); }
     api.hostname = options.hostname || parsed.hostname || 'trackthis.nl';
     api.port     = options.port     || parsed.port     || ( transports[api.protocol] && transports[api.protocol].defaultPort ) || 8080;
     api.basePath = options.basePath || parsed.pathname || '/api/';
     transport    = transports[api.protocol].transport.bind(scope);
-    if (api.basePath.slice(-1) !== '/') api.basePath += '/';
+    if (api.basePath.slice(-1) !== '/') { api.basePath += '/'; }
     return checkTransport()
       .then(function() {
         return transport(Object.assign({name : 'versions'}, settings, options))
@@ -33093,9 +33092,9 @@ var api = module.exports = {
      * @returns {Promise}
      */
     setToken : function (newToken) {
-      if (!newToken) return Promise.resolve();
-      if ('string' !== typeof newToken) return Promise.reject('The new token is not a string');
-      if (!newToken.length) return Promise.reject('The new token is an empty string');
+      if (!newToken) { return Promise.resolve(); }
+      if ('string' !== typeof newToken) { return Promise.reject('The new token is not a string'); }
+      if (!newToken.length) { return Promise.reject('The new token is an empty string'); }
       settings.token = newToken;
       settings.user  = undefined;
       localstorage.setItem('token', newToken);
@@ -33112,9 +33111,9 @@ var api = module.exports = {
      * @returns {Promise}
      */
     setRefreshToken : function (refreshToken) {
-      if (!refreshToken) return Promise.resolve();
-      if ('string' !== typeof refreshToken) return Promise.reject('The new token is not a string');
-      if (!refreshToken.length) return Promise.reject('The new token is an empty string');
+      if (!refreshToken) { return Promise.resolve(); }
+      if ('string' !== typeof refreshToken) { return Promise.reject('The new token is not a string'); }
+      if (!refreshToken.length) { return Promise.reject('The new token is an empty string'); }
       settings.refreshToken = refreshToken;
       localstorage.setItem('refreshToken', refreshToken);
       return Promise.resolve();
