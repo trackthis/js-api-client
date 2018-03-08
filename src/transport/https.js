@@ -24,6 +24,12 @@ module.exports = {
     options.port     = options.port || parsed.port || this.port || (document && document.location && document.location.port);
     options.pathname = options.pathname || (this.basePath + ((options.name === 'versions') ? '' : ('v' + this.chosenVersion + '/')) + options.name + '.json');
     options.url      = url.format(options);
+    options.data     = options.data || {};
+    Object.keys(options.data).forEach(function(key) {
+      if ( 'undefined' === typeof options.data[key] ) {
+        delete options.data[key];
+      }
+    });
     return new Promise(function (resolve, reject) {
       ajax(options, function (err, res, body) {
         var output = {
