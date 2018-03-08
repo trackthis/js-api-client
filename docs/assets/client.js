@@ -33116,22 +33116,16 @@ var api = module.exports = {
 
             // Insert data into the queue
             function(d,next) {
-              d               = {};
-              d.api           = api;
-              d.rawApi        = rawApi;
-              d.settings      = settings;
-              d.data          = data;
-              d.ec            = new EC(sigConfig.curve);
-              d.deserialize   = deserializeObject;
-              d.serialize     = serializeObject;
-              d.catchRedirect = catchRedirect;
-
-              if (window && window.location && window.location.search) {
-                var query = deserializeObject(window.location.search.slice(1));
-                d.code      = d.code || query.code || d.code;
-              }
-
-              next(d);
+              next({
+                api           : api,
+                rawApi        : rawApi,
+                settings      : settings,
+                data          : data,
+                ec            : new EC(sigConfig.curve),
+                deserialize   : deserializeObject,
+                serialize     : serializeObject,
+                catchRedirect : catchRedirect
+              });
             },
 
             require('./user/login/oauth/token'),
