@@ -27782,11 +27782,10 @@ module.exports = function (scope) {
     if (!scope.rawApi.oauth.postToken) { return next(data); }
 
     // Try to fetch the code
-    var code = false;
-    if (data.code) { code = code || data.code; }
-    if (window && window.location && window.location.search) {
+    var code = data.code || false;
+    if ( (!code) && window && window.location && window.location.search) {
       var query = scope.deserialize(window.location.search.slice(1));
-      code      = code || query.code || code || false;
+      code      = query.code || false;
     }
 
     // If we don't have a code by now, cancel
