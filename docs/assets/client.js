@@ -27112,6 +27112,8 @@ module.exports = function (scope) {
             if (!scope.chosenVersion) {
               throw 'We do not support any versions supported by the server';
             }
+            // Emit a 'connect' event, so everything knows we're connected
+            scope.api.emit('connect');
           });
       })
       .then(('function' === (typeof callback)) ? callback : scope.noop);
@@ -27722,8 +27724,11 @@ module.exports = function(scope) {
                 password = data.password || data.pass || data.passwd || data.pwd  || data.pw || undefined;
             data.username = username;
             data.password = password;
-            data.resolve  = resolve;
             data.reject   = reject;
+            data.resolve  = function(response) {
+              scope.api.emit('login', response);
+              return resolve(response);
+            };
             next(data);
           },
 
