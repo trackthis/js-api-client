@@ -26997,11 +26997,58 @@ function extend() {
 }
 
 },{}],187:[function(require,module,exports){
-module.exports = function(scope) {
-  // TODO: move the connect method here
+var url = require('url');
+
+module.exports = function (scope) {
+  /**
+   * Connect the api client to the (default) remote
+   *
+   * Optionally takes a callback function for when it's ready
+   * Returns a promise that will resolve when connected or reject on a failure to connect
+   *
+   * @param {void | string   | object} options
+   * @param {void | function }         callback
+   *
+   * @return {Promise}
+   */
+  return function (options, callback) {
+    if ('function' === typeof options) {
+      callback = options;
+      options  = {};
+    }
+    if ('string' === typeof options) { options = {remote : options}; }
+    options = options || {};
+    if ('object' !== typeof options) { throw "Given options was neither a string, an object or undefined"; }
+    options.remote = options.remote || 'https://trackthis.nl/api';
+    var parsed = url.parse(options.remote);
+    scope.protocol = options.protocol || parsed.protocol || 'http';
+    if (scope.protocol.slice(-1) === ':') { scope.protocol = scope.protocol.slice(0, -1); }
+    if (!scope.transports[scope.protocol]) { return Promise.reject('Given protocol not supported'); }
+    scope.hostname = options.hostname || parsed.hostname || 'trackthis.nl';
+    scope.port     = options.port || parsed.port || (scope.transports[scope.protocol] && scope.transports[scope.protocol].defaultPort) || 8080;
+    scope.basePath = options.basePath || parsed.pathname || '/api/';
+    scope.transport    = scope.transports[scope.protocol].transport.bind(scope);
+    if (scope.basePath.slice(-1) !== '/') { scope.basePath += '/'; }
+    return scope
+      .checkTransport()
+      .then(function() {
+        return scope.transport(Object.assign({name : 'versions'}, options))
+          .then(scope.catchRedirect)
+          .then(function (response) {
+            var serverVersions = response.data.map(function (v) {
+              return (v.substr(0, 1) === 'v') ? parseInt(v.substr(1)) : v;
+            });
+            chosenVersion      = scope.intersect(serverVersions, scope.supportedVersions).pop();
+            if (!chosenVersion) {
+              throw 'We do not support any versions supported by the server';
+            }
+          });
+      })
+      .then(('function' === (typeof callback)) ? callback : scope.noop);
+  };
 };
 
-},{}],188:[function(require,module,exports){
+},{"url":178}],188:[function(require,module,exports){
 module.exports = function (scope) {
   return function catchRedirect(response) {
     if (window && window.location && window.location.href) {
@@ -27202,42 +27249,40 @@ module.exports = function (scope) {
 };
 
 },{"crypto":60,"trackthis-ecdsa":173}],195:[function(require,module,exports){
-module.exports = function(scope) {
-  /**
-   * Intersect 2 or more arrays
-   *
-   * Returns a new array representing the intersection of arrays
-   * You should not assume that keys are preserved
+/**
+ * Intersect 2 or more arrays
+ *
+ * Returns a new array representing the intersection of arrays
+ * You should not assume that keys are preserved
 
-   * @param {...array}
-   *
-   * @returns {array}
-   */
-  return function intersect() {
+ * @param {...array}
+ *
+ * @returns {array}
+ */
+module.exports = function intersect() {
 
-    // Convert the arguments special to an array
-    var args = arguments;
-    args = Object.keys(args).map(function(key) {
-      return args[key];
+  // Convert the arguments special to an array
+  var args = arguments;
+  args     = Object.keys(args).map(function (key) {
+    return args[key];
+  });
+  if (!args.length) { return []; }
+
+  // Fetch the first argument & make sure it's an array
+  var output = args.shift();
+  if (!Array.isArray(output)) { return []; }
+  output = output.slice();
+
+  // Intersect it with all the other arguments
+  // Also makes sure only arrays are used
+  args.forEach(function (subject) {
+    if (!Array.isArray(subject)) { return; }
+    output = output.filter(function (entry) {
+      return subject.indexOf(entry) >= 0;
     });
-    if ( !args.length ) { return []; }
+  });
 
-    // Fetch the first argument & make sure it's an array
-    var output = args.shift();
-    if (!Array.isArray(output)) { return []; }
-    output = output.slice();
-
-    // Intersect it with all the other arguments
-    // Also makes sure only arrays are used
-    args.forEach(function(subject) {
-      if (!Array.isArray(subject)) { return; }
-      output = output.filter(function(entry) {
-        return subject.indexOf(entry) >= 0;
-      });
-    });
-
-    return output;
-  };
+  return output;
 };
 
 },{}],196:[function(require,module,exports){
@@ -27372,66 +27417,8 @@ api.setRedirectUri = function(uri) {
 // var api = module.exports = {
 //
 //
-//   /**
-//    * Connect the api client to the (default) remote
-//    *
-//    * Optionally takes a callback function for when it's ready
-//    * Returns a promise that will resolve when connected or reject on a failure to connect
-//    *
-//    * @param {void | string   | object} options
-//    * @param {void | function }         callback
-//    *
-//    * @return {Promise}
-//    */
-//   connect: function( options, callback ) {
-//     if ('function' === typeof options) { callback = options ; options = {} ; }
-//     if ('string'   === typeof options) { options = { remote: options }; }
-//     options = options || {};
-//     if ('object' !== typeof options) { throw "Given options was neither a string, an object or undefined"; }
-//     options.remote = options.remote || 'https://trackthis.nl/api';
-//     var parsed     = url.parse(options.remote);
-//     api.protocol   = options.protocol || parsed.protocol || 'http';
-//     if (api.protocol.slice(-1) === ':') { api.protocol = api.protocol.slice(0, -1); }
-//     if (!transports[api.protocol]) { return Promise.reject('Given protocol not supported'); }
-//     api.hostname = options.hostname || parsed.hostname || 'trackthis.nl';
-//     api.port     = options.port     || parsed.port     || ( transports[api.protocol] && transports[api.protocol].defaultPort ) || 8080;
-//     api.basePath = options.basePath || parsed.pathname || '/api/';
-//     transport    = transports[api.protocol].transport.bind(scope);
-//     if (api.basePath.slice(-1) !== '/') { api.basePath += '/'; }
-//     return checkTransport()
-//       .then(function() {
-//         return transport(Object.assign({name : 'versions'}, settings, options))
-//           .then(catchRedirect)
-//           .then(function (response) {
-//             var serverVersions = response.data.map(function (v) {
-//               return (v.substr(0, 1) === 'v') ? parseInt(v.substr(1)) : v;
-//             });
-//             chosenVersion = intersect(serverVersions, supportedVersions).pop();
-//             if (!chosenVersion) {
-//               throw 'We do not support any versions supported by the server';
-//             }
-//           });
-//       })
-//       .then(('function'===(typeof callback))?callback:noop);
-//   },
-//
 //   user : {
 //
-//     /**
-//      * Logs out the user inside this browser
-//      *
-//      * Simply destroys the data we have to authenticate to the server
-//      *
-//      * @returns {Promise}
-//      */
-//     logout : function () {
-//       settings.token        = undefined;
-//       settings.refreshToken = undefined;
-//       settings.user         = undefined;
-//       localstorage.removeItem('token');
-//       localstorage.removeItem('refreshToken');
-//       return Promise.resolve();
-//     },
 //
 //     /**
 //      * Sets the token used for identifying the client/user to the server
@@ -27543,7 +27530,6 @@ module.exports = function (api) {
     port              : null,
     basePath          : null,
     transport         : null,
-    transports        : require('./transport'),
     redirect_uri      : undefined,
     client_id         : undefined,
     client_secret     : undefined,
@@ -27567,39 +27553,44 @@ module.exports = function (api) {
     }
   };
 
-  // Load some helper functions
-  scope.cbq                   = require('./helper/cbq');
-  scope.ensureManifest        = require('./helper/ensure-manifest')(scope);
-  scope.generateSecret        = require('./helper/generate-secret')(scope);
+  // Static helpers
+  scope.cbq       = require('./helper/cbq');
+  scope.intersect = require('./helper/intersect');
+
+  // Active helpers
   scope.catchRedirect         = require('./helper/catch-redirect')(scope);
-  scope.ensureSignatureConfig = require('./helper/ensure-signature-config')(scope);
-  scope.serialize             = require('./helper/serialize')(scope);
-  scope.deserialize           = require('./helper/deserialize')(scope);
-  scope.noop                  = require('./helper/noop')(scope);
-  scope.set_deep              = require('./helper/set-deep')(scope);
-  scope.intersect             = require('./helper/intersect')(scope);
   scope.checkTransport        = require('./helper/check-transport')(scope);
+  scope.deserialize           = require('./helper/deserialize')(scope);
+  scope.ensureManifest        = require('./helper/ensure-manifest')(scope);
+  scope.ensureSignatureConfig = require('./helper/ensure-signature-config')(scope);
   scope.fetchManifest         = require('./helper/fetch-manifest')(scope);
+  scope.generateSecret        = require('./helper/generate-secret')(scope);
+  scope.noop                  = require('./helper/noop')(scope);
+  scope.serialize             = require('./helper/serialize')(scope);
+  scope.set_deep              = require('./helper/set-deep')(scope);
+  scope.transports            = require('./transport')(scope);
 
   return scope;
 };
 
 },{"./helper/catch-redirect":188,"./helper/cbq":1,"./helper/check-transport":189,"./helper/deserialize":190,"./helper/ensure-manifest":191,"./helper/ensure-signature-config":192,"./helper/fetch-manifest":193,"./helper/generate-secret":194,"./helper/intersect":195,"./helper/noop":196,"./helper/serialize":197,"./helper/set-deep":198,"./transport":203}],201:[function(require,module,exports){
-/**
- * HTTP protocol handler
- *
- * The ajax-request supports both HTTP and HTTPS, so simply redirect to the HTTPS handler
- */
-module.exports = {
-  defaultPort : 80,
-  transport   : function (options) {
-    if ('string' === typeof options) { options = {name : options}; }
-    options = options || {};
-    if (!options.name) { return Promise.reject('No name given'); }
-    options.protocol = 'http';
-    options.port     = options.port || this.port || this.transports.http.defaultPort;
-    return this.transports.https.transport.call(this,options);
-  }
+module.exports = function(scope) {
+  /**
+   * HTTP protocol handler
+   *
+   * The ajax-request supports both HTTP and HTTPS, so simply redirect to the HTTPS handler
+   */
+  return {
+    defaultPort : 80,
+    transport   : function (options) {
+      if ('string' === typeof options) { options = {name : options}; }
+      options = options || {};
+      if (!options.name) { return Promise.reject('No name given'); }
+      options.protocol = 'http';
+      options.port     = options.port || scope.port || scope.transports.http.defaultPort;
+      return this.transports.https.transport(options);
+    }
+  };
 };
 
 },{}],202:[function(require,module,exports){
@@ -27612,47 +27603,49 @@ module.exports = {
 var ajax = require('ajax-request'),
     url  = require('url');
 
-module.exports = {
-  defaultPort : 443,
-  transport   : function (options) {
-    if ('string' === typeof options) { options = {name : options}; }
-    options = options || {};
-    if (!options.name) { return Promise.reject('No name given'); }
-    this.basePath = this.basePath || '/';
-    if (this.basePath.slice(-1) !== '/') { this.basePath += '/'; }
-    var parsed       = options.url && url.parse(options.url) || {};
-    options.name     = options.name.replace(/\./g, '/');
-    options.method   = (options.method || 'get').toUpperCase();
-    options.protocol = options.protocol || parsed.protocol || this.protocol || (document && document.location && document.location.protocol);
-    if (options.protocol.slice(-1) !== ':') { options.protocol += ':'; }
-    options.hostname = options.hostname || parsed.hostname || this.hostname || (document && document.location && document.location.hostname);
-    options.port     = options.port || parsed.port || this.port || (document && document.location && document.location.port);
-    options.pathname = options.pathname || (this.basePath + ((options.name === 'versions') ? '' : ('v' + this.chosenVersion + '/')) + options.name + '.json');
-    options.url      = url.format(options);
-    options.data     = options.data || {};
-    Object.keys(options.data).forEach(function(key) {
-      if ( 'undefined' === typeof options.data[key] ) {
-        delete options.data[key];
-      }
-    });
-    return new Promise(function (resolve, reject) {
-      ajax(options, function (err, res, body) {
-        var output = {
-          status : res.statusCode,
-          text   : body,
-          data   : null
-        };
-        try {
-          output.data = JSON.parse(output.text);
-        } catch (e) {
-          output.data = null;
+module.exports = function(scope) {
+  return {
+    defaultPort : 443,
+    transport   : function (options) {
+      if ('string' === typeof options) { options = {name : options}; }
+      options = options || {};
+      if (!options.name) { return Promise.reject('No name given'); }
+      scope.basePath = scope.basePath || '/';
+      if (scope.basePath.slice(-1) !== '/') { scope.basePath += '/'; }
+      var parsed       = options.url && url.parse(options.url) || {};
+      options.name     = options.name.replace(/\./g, '/');
+      options.method   = (options.method || 'get').toUpperCase();
+      options.protocol = options.protocol || parsed.protocol || scope.protocol || (document && document.location && document.location.protocol);
+      if (options.protocol.slice(-1) !== ':') { options.protocol += ':'; }
+      options.hostname = options.hostname || parsed.hostname || scope.hostname || (document && document.location && document.location.hostname);
+      options.port     = options.port || parsed.port || scope.port || (document && document.location && document.location.port);
+      options.pathname = options.pathname || (scope.basePath + ((options.name === 'versions') ? '' : ('v' + scope.chosenVersion + '/')) + options.name + '.json');
+      options.url      = url.format(options);
+      options.data     = options.data || {};
+      Object.keys(options.data).forEach(function(key) {
+        if ( 'undefined' === typeof options.data[key] ) {
+          delete options.data[key];
         }
-        if (err) { return reject(Object.assign({error : err}, output)); }
-        resolve(output);
-        return undefined;
       });
-    });
-  }
+      return new Promise(function (resolve, reject) {
+        ajax(options, function (err, res, body) {
+          var output = {
+            status : res.statusCode,
+            text   : body,
+            data   : null
+          };
+          try {
+            output.data = JSON.parse(output.text);
+          } catch (e) {
+            output.data = null;
+          }
+          if (err) { return reject(Object.assign({error : err}, output)); }
+          resolve(output);
+          return undefined;
+        });
+      });
+    }
+  };
 };
 
 },{"ajax-request":2,"url":178}],203:[function(require,module,exports){
@@ -27694,8 +27687,8 @@ module.exports = function (scope) {
   };
 
   return {
-    http  : require('./http'),
-    https : require('./https')
+    http  : require('./http')(scope),
+    https : require('./https')(scope)
   };
 };
 
@@ -27703,15 +27696,34 @@ module.exports = function (scope) {
 module.exports = function(scope) {
   return {
     login: require('./login')(scope),
+    logout: require('./logout')(scope)
   };
 };
 
-},{"./login":205}],205:[function(require,module,exports){
+},{"./login":205,"./logout":206}],205:[function(require,module,exports){
 module.exports = function(scope) {
   // TODO: move the login method here
 };
 
 },{}],206:[function(require,module,exports){
+module.exports = function (scope) {
+  /**
+   * Logs out the user inside this browser
+   *
+   * Simply destroys the data we have to authenticate to the server
+   *
+   * @returns {Promise}
+   */
+  return function () {
+    scope.token         = undefined;
+    scope.refresh_token = undefined;
+    scope.user          = undefined;
+    scope.api.emit('logout');
+    return Promise.resolve();
+  };
+};
+
+},{}],207:[function(require,module,exports){
 (function (apiObject) {
   // Register to AMD or attach to the window
   /** global: define */
@@ -27724,4 +27736,4 @@ module.exports = function(scope) {
   }
 })(require('./index'));
 
-},{"./index":199}]},{},[206]);
+},{"./index":199}]},{},[207]);

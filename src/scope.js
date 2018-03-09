@@ -14,7 +14,6 @@ module.exports = function (api) {
     port              : null,
     basePath          : null,
     transport         : null,
-    transports        : require('./transport'),
     redirect_uri      : undefined,
     client_id         : undefined,
     client_secret     : undefined,
@@ -38,19 +37,22 @@ module.exports = function (api) {
     }
   };
 
-  // Load some helper functions
-  scope.cbq                   = require('./helper/cbq');
-  scope.ensureManifest        = require('./helper/ensure-manifest')(scope);
-  scope.generateSecret        = require('./helper/generate-secret')(scope);
+  // Static helpers
+  scope.cbq       = require('./helper/cbq');
+  scope.intersect = require('./helper/intersect');
+
+  // Active helpers
   scope.catchRedirect         = require('./helper/catch-redirect')(scope);
-  scope.ensureSignatureConfig = require('./helper/ensure-signature-config')(scope);
-  scope.serialize             = require('./helper/serialize')(scope);
-  scope.deserialize           = require('./helper/deserialize')(scope);
-  scope.noop                  = require('./helper/noop')(scope);
-  scope.set_deep              = require('./helper/set-deep')(scope);
-  scope.intersect             = require('./helper/intersect')(scope);
   scope.checkTransport        = require('./helper/check-transport')(scope);
+  scope.deserialize           = require('./helper/deserialize')(scope);
+  scope.ensureManifest        = require('./helper/ensure-manifest')(scope);
+  scope.ensureSignatureConfig = require('./helper/ensure-signature-config')(scope);
   scope.fetchManifest         = require('./helper/fetch-manifest')(scope);
+  scope.generateSecret        = require('./helper/generate-secret')(scope);
+  scope.noop                  = require('./helper/noop')(scope);
+  scope.serialize             = require('./helper/serialize')(scope);
+  scope.set_deep              = require('./helper/set-deep')(scope);
+  scope.transports            = require('./transport')(scope);
 
   return scope;
 };

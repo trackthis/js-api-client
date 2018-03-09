@@ -36,7 +36,7 @@ module.exports = function (scope) {
   };
 
   return {
-    http  : require('./http'),
-    https : require('./https')
+    http  : require('./http')(scope),
+    https : require('./https')(scope)
   };
 };

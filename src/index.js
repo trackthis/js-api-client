@@ -67,66 +67,8 @@ api.setRedirectUri = function(uri) {
 // var api = module.exports = {
 //
 //
-//   /**
-//    * Connect the api client to the (default) remote
-//    *
-//    * Optionally takes a callback function for when it's ready
-//    * Returns a promise that will resolve when connected or reject on a failure to connect
-//    *
-//    * @param {void | string   | object} options
-//    * @param {void | function }         callback
-//    *
-//    * @return {Promise}
-//    */
-//   connect: function( options, callback ) {
-//     if ('function' === typeof options) { callback = options ; options = {} ; }
-//     if ('string'   === typeof options) { options = { remote: options }; }
-//     options = options || {};
-//     if ('object' !== typeof options) { throw "Given options was neither a string, an object or undefined"; }
-//     options.remote = options.remote || 'https://trackthis.nl/api';
-//     var parsed     = url.parse(options.remote);
-//     api.protocol   = options.protocol || parsed.protocol || 'http';
-//     if (api.protocol.slice(-1) === ':') { api.protocol = api.protocol.slice(0, -1); }
-//     if (!transports[api.protocol]) { return Promise.reject('Given protocol not supported'); }
-//     api.hostname = options.hostname || parsed.hostname || 'trackthis.nl';
-//     api.port     = options.port     || parsed.port     || ( transports[api.protocol] && transports[api.protocol].defaultPort ) || 8080;
-//     api.basePath = options.basePath || parsed.pathname || '/api/';
-//     transport    = transports[api.protocol].transport.bind(scope);
-//     if (api.basePath.slice(-1) !== '/') { api.basePath += '/'; }
-//     return checkTransport()
-//       .then(function() {
-//         return transport(Object.assign({name : 'versions'}, settings, options))
-//           .then(catchRedirect)
-//           .then(function (response) {
-//             var serverVersions = response.data.map(function (v) {
-//               return (v.substr(0, 1) === 'v') ? parseInt(v.substr(1)) : v;
-//             });
-//             chosenVersion = intersect(serverVersions, supportedVersions).pop();
-//             if (!chosenVersion) {
-//               throw 'We do not support any versions supported by the server';
-//             }
-//           });
-//       })
-//       .then(('function'===(typeof callback))?callback:noop);
-//   },
-//
 //   user : {
 //
-//     /**
-//      * Logs out the user inside this browser
-//      *
-//      * Simply destroys the data we have to authenticate to the server
-//      *
-//      * @returns {Promise}
-//      */
-//     logout : function () {
-//       settings.token        = undefined;
-//       settings.refreshToken = undefined;
-//       settings.user         = undefined;
-//       localstorage.removeItem('token');
-//       localstorage.removeItem('refreshToken');
-//       return Promise.resolve();
-//     },
 //
 //     /**
 //      * Sets the token used for identifying the client/user to the server
