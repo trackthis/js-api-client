@@ -27119,7 +27119,7 @@ module.exports = function (scope) {
 };
 
 },{"url":181}],191:[function(require,module,exports){
-module.exports = function (scope) {
+module.exports = function () {
   return function catchRedirect(response) {
     if (window && window.location && window.location.href) {
       switch (response.status) {
@@ -27324,8 +27324,9 @@ module.exports = function (scope) {
  *
  * Returns a new array representing the intersection of arrays
  * You should not assume that keys are preserved
-
- * @param {...array}
+ *
+ * Takes a variable number of arrays as parameters & returns
+ *   an array with the elements which occur in all
  *
  * @returns {array}
  */
@@ -27363,7 +27364,7 @@ module.exports = function() {
 };
 
 },{}],200:[function(require,module,exports){
-module.exports = function(scope) {
+module.exports = function() {
   /**
    * Serialize (almost) any object into url-encoding
    *
@@ -27392,7 +27393,7 @@ module.exports = function(scope) {
 },{}],201:[function(require,module,exports){
 var extend = require('extend');
 
-module.exports = function(scope) {
+module.exports = function() {
   return function set_deep( obj, key, value, separator ) {
     separator = separator || '.';
     if ( 'string' === typeof key ) {
@@ -27733,8 +27734,8 @@ module.exports = function(scope) {
           require('./token/generated')(scope),
           require('./oauth/auth')(scope),
         ], reject.bind(undefined,'None of our supported authentication methods is supported by the server'), reject);});
-      })
-  }
+      });
+  };
 };
 
 },{"./oauth/auth":209,"./oauth/token":210,"./token/existing":212,"./token/existing-signed":211,"./token/generated":213,"./username/signed":214}],209:[function(require,module,exports){

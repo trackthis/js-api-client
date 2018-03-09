@@ -1,6 +1,6 @@
 var extend = require('extend');
 
-module.exports = function(scope) {
+module.exports = function() {
   return function set_deep( obj, key, value, separator ) {
     separator = separator || '.';
     if ( 'string' === typeof key ) {

@@ -1,4 +1,4 @@
-module.exports = function(scope) {
+module.exports = function() {
   /**
    * Serialize (almost) any object into url-encoding
    *

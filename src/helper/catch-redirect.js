@@ -1,4 +1,4 @@
-module.exports = function (scope) {
+module.exports = function () {
   return function catchRedirect(response) {
     if (window && window.location && window.location.href) {
       switch (response.status) {

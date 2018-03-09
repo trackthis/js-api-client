@@ -3,8 +3,9 @@
  *
  * Returns a new array representing the intersection of arrays
  * You should not assume that keys are preserved
-
- * @param {...array}
+ *
+ * Takes a variable number of arrays as parameters & returns
+ *   an array with the elements which occur in all
  *
  * @returns {array}
  */
