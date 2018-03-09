@@ -33,6 +33,6 @@ module.exports = function(scope) {
           require('./token/generated')(scope),
           require('./oauth/auth')(scope),
         ], reject.bind(undefined,'None of our supported authentication methods is supported by the server'), reject);});
-      })
-  }
+      });
+  };
 };
