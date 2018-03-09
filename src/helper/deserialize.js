@@ -8,7 +8,7 @@ module.exports = function(scope) {
    *
    * @returns {object}
    */
-  module.exports = function deserializeObject(encoded) {
+  return function deserializeObject(encoded) {
     var output = {};
     if ( 'string' !== typeof encoded ) { throw "Object could not be decoded"; }
     decodeURIComponent(encoded)                                                                  // "a[b]=c&a[d]=e&f=g,h"

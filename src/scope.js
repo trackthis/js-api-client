@@ -21,6 +21,7 @@ module.exports = function (api) {
     redirect_uri      : undefined,
     refresh_token     : undefined,
     token             : undefined,
+    token_expires     : undefined,
     user              : undefined,
     signature         : {
       pubkey     : undefined, // the server's public key,
@@ -90,6 +91,42 @@ module.exports = function (api) {
     if (!refreshToken.length) { return Promise.reject('The new token is an empty string'); }
     scope.refreshToken = refreshToken;
     return Promise.resolve();
+  };
+
+  /**
+   * Sets the client id used for identifying the application to the server
+   *
+   * @param {string} id
+   *
+   * @returns {EE} api
+   */
+  api.setClientId = function (id) {
+    scope.client_id = id;
+    return api;
+  };
+
+  /**
+   * Sets the client secret used for identifying the application to the server
+   *
+   * @param {string} secret
+   *
+   * @returns {EE} api
+   */
+  api.setClientSecret = function (secret) {
+    scope.client_secret = secret;
+    return api;
+  };
+
+  /**
+   * Sets the client redirect uri to pass to the server so it knows where to send the client
+   *
+   * @param {string} uri
+   *
+   * @returns {EE}
+   */
+  api.setRedirectUri = function(uri) {
+    scope.redirect_uri = uri;
+    return api;
   };
 
   return scope;

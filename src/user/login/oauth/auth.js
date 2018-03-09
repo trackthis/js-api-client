@@ -1,29 +1,33 @@
-// Try oauth init
-module.exports = function(d,next,fail) {
-  if (!d) { return fail('No data passed'); }
-  if (!d.rawApi.oauth.getAuth) { return next(d); }
+module.exports = function (scope) {
 
-  // Convert the username(s) into csv
-  if (Array.isArray(d.username)) {
-    /** global: encodeURIComponent */
-    d.username = d.username.map(encodeURIComponent).map(function(name) {
-      return name.replace(/,/g, '%2C');
-    }).join(',');
-  }
+  // Try oauth init
+  return function (data, next, fail) {
+    if (!data) { return fail('No data passed'); }
+    if (!scope.rawApi.oauth.getAuth) { return next(data); }
 
-  // Send the request
-  return d.rawApi
-    .oauth.getAuth({
-      data : {
-        account       : d.username,
-        response_type : 'code',
-        client_id     : d.settings.clientId || 'APP-00',
-        redirect_uri  : d.settings.callback || 'http://localhost:5000/',
-        scope         : ''
-      }
-    })
-    .then(d.catchRedirect)
-    .then(function() {
-      fail('We should\'ve gotten a redirect');
-    });
+    // Convert the username(s) into csv
+    if (Array.isArray(data.username)) {
+      /** global: encodeURIComponent */
+      data.username = data.username.map(encodeURIComponent).map(function (name) {
+        return name.replace(/,/g, '%2C');
+      }).join(',');
+    }
+
+    // Send the request
+    return scope
+      .rawApi.oauth.getAuth({
+        data : {
+          account       : data.username,
+          response_type : 'code',
+          client_id     : scope.clientId || 'APP-00',
+          redirect_uri  : scope.callback || 'http://localhost:5000/',
+          scope         : ''
+        }
+      })
+      .then(scope.catchRedirect)
+      .then(function () {
+        fail('We should\'ve gotten a redirect');
+      });
+  };
+
 };

@@ -2,7 +2,7 @@ var crypto = require('crypto'),
     EC     = require('trackthis-ecdsa');
 
 module.exports = function (scope) {
-  module.exports = function generateSecret(username, password) {
+  return function generateSecret(username, password) {
     var ec     = scope.ec || new EC(scope.signature.curve);
     var _hash  = ec.H(username).toString('hex');
     var result = 0;

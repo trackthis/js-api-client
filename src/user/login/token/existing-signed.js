@@ -1,38 +1,41 @@
 var base64url = require('base64url');
 
-// Try an existing token
-module.exports = function(d,next,fail) {
-  if (!d) { return fail('No data passed'); }
-  if (!d.rawApi.user.getLogin) { return next(d); }
-  if (!d.data.token) { return next(d); }
+module.exports = function (scope) {
 
-  // Fetch the signature & it's signer
-  var signature = d.signature   || d.data.signature || undefined,
-      signer    = d.data.signer || d.username       || undefined;
+  // Try an existing token
+  return function (data, next, fail) {
+    if (!data) { return fail('No data passed'); }
+    if (!scope.rawApi.user.getLogin) { return next(data); }
+    if (!data.token) { return next(data); }
 
-  // Generate signature if none present
-  if (!signature) {
-    if ( 'string' !== typeof d.username ) { return next(d); }
-    if ( 'string' !== typeof d.password ) { return next(d); }
-    d.ec.kp.setPrivate(d.generateSecret(d.username,d.password));
-    signature = base64url.encode(d.ec.sign(d.data.token));
-    signer    = d.data.signer || d.username;
-  }
+    // Fetch the signature & it's signer
+    var signature = data.signature || undefined,
+        signer    = data.signer || data.username || undefined;
 
-  // Add the signature to the token
-  var tmpToken = d.data.token + '.' + signature;
+    // Generate signature if none present
+    if (!signature) {
+      if ('string' !== typeof data.username) { return next(data); }
+      if ('string' !== typeof data.password) { return next(data); }
+      scope.ec.kp.setPrivate(scope.generateSecret(data.username, data.password));
+      signature = base64url.encode(scope.ec.sign(data.token));
+      signer    = data.username;
+    }
 
-  // Send the request
-  return d.rawApi
-    .user.getLogin({data : {token : tmpToken, username : d.username, signer: signer }})
-    .then(d.catchRedirect)
-    .then(function (response) {
-      if (response.data && response.data.token) {
-        d.api.user.setToken( response.data.token || d.settings.token );
-        d.api.user.setRefreshToken( response.data.refreshToken || response.data.refresh_token || d.settings.refreshToken );
-        d.resolve(response.data);
-      } else {
-        next(d);
-      }
-    });
+    // Add the signature to the token
+    var tmpToken = data.token + '.' + signature;
+
+    // Send the request
+    return scope
+      .rawApi.user.getLogin({data : {token : tmpToken, username : data.username, signer : signer}})
+      .then(scope.catchRedirect)
+      .then(function (response) {
+        if (response.data && response.data.token) {
+          scope.api.setToken(response.data.token || scope.token);
+          scope.api.setRefreshToken(response.data.refreshToken || response.data.refresh_token || scope.refresh_token);
+          data.resolve(response.data);
+        } else {
+          next(data);
+        }
+      });
+  };
 };

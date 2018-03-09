@@ -1,20 +1,22 @@
-// Try an existing token
-module.exports = function(d,next,fail) {
-  if (!d) { return fail('No data passed'); }
-  if (!d.rawApi.user.getLogin) { return next(d); }
-  if (!d.data.token) { return next(d); }
+module.exports = function (scope) {
+  // Try an existing token
+  return function (data, next, fail) {
+    if (!data) { return fail('No data passed'); }
+    if (!scope.rawApi.user.getLogin) { return next(data); }
+    if (!data.token) { return next(data); }
 
-  // Send the request
-  return d.rawApi
-    .user.getLogin({data : {token : d.data.token, username : d.username }})
-    .then(d.catchRedirect)
-    .then(function (response) {
-      if (response.data && response.data.token) {
-        d.api.user.setToken( response.data.token || d.settings.token );
-        d.api.user.setRefreshToken( response.data.refreshToken || response.data.refresh_token || d.settings.refreshToken );
-        d.resolve(response.data);
-      } else {
-        next(d);
-      }
-    });
+    // Send the request
+    return scope
+      .rawApi.user.getLogin({data : {token : data.token, username : data.username}})
+      .then(scope.catchRedirect)
+      .then(function (response) {
+        if (response.data && response.data.token) {
+          scope.api.setToken(response.data.token || scope.token);
+          scope.api.setRefreshToken(response.data.refreshToken || response.data.refresh_token || scope.refreshToken);
+          data.resolve(response.data);
+        } else {
+          next(data);
+        }
+      });
+  };
 };
