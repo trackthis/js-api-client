@@ -69,49 +69,6 @@ api.setRedirectUri = function(uri) {
 //
 //   user : {
 //
-//
-//     /**
-//      * Sets the token used for identifying the client/user to the server
-//      *
-//      * Only use this if you know to use a certain token
-//      * Ordinarily, the client itself handles this
-//      *
-//      * @param {string} newToken
-//      *
-//      * @returns {Promise}
-//      */
-//     setToken : function (newToken) {
-//       if (!newToken) { return Promise.resolve(); }
-//       if ('string' !== typeof newToken) { return Promise.reject('The new token is not a string'); }
-//       if (!newToken.length) { return Promise.reject('The new token is an empty string'); }
-//       settings.token = newToken;
-//       settings.user  = undefined;
-//       localstorage.setItem('token', newToken);
-//       return Promise.resolve();
-//     },
-//
-//     /**
-//      * Sets the refresh token used for updating the API token
-//      *
-//      * Only use this if you know to use a certain token
-//      * Ordinarily, the client itself handles this
-//      *
-//      * @param {string} refreshToken
-//      * @returns {Promise}
-//      */
-//     setRefreshToken : function (refreshToken) {
-//       if (!refreshToken) { return Promise.resolve(); }
-//       if ('string' !== typeof refreshToken) { return Promise.reject('The new token is not a string'); }
-//       if (!refreshToken.length) { return Promise.reject('The new token is an empty string'); }
-//       settings.refreshToken = refreshToken;
-//       localstorage.setItem('refreshToken', refreshToken);
-//       return Promise.resolve();
-//     },
-//
-//     me: function() {
-//
-//     },
-//
 //     /**
 //      * Try to login through all the methods we know
 //      */

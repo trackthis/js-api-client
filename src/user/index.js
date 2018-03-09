@@ -1,6 +1,6 @@
-module.exports = function(scope) {
+module.exports = function (scope) {
   return {
-    login: require('./login')(scope),
-    logout: require('./logout')(scope)
+    login  : require('./login')(scope),
+    logout : require('./logout')(scope)
   };
 };

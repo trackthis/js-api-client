@@ -8,20 +8,20 @@ module.exports = function (api) {
     skipManifestKeys  : [
       'baseuri', 'formats'
     ],
-    chosenVersion     : null,
     protocol          : 'https',
+    chosenVersion     : null,
+    basePath          : null,
     hostname          : null,
     port              : null,
-    basePath          : null,
     transport         : null,
-    redirect_uri      : undefined,
     client_id         : undefined,
     client_secret     : undefined,
-    token             : undefined,
-    refresh_token     : undefined,
-    user              : undefined,
-    keypair           : undefined,
     ec                : undefined,
+    keypair           : undefined,
+    redirect_uri      : undefined,
+    refresh_token     : undefined,
+    token             : undefined,
+    user              : undefined,
     signature         : {
       pubkey     : undefined, // the server's public key,
       curve      : 'secp256k1',
@@ -53,6 +53,44 @@ module.exports = function (api) {
   scope.serialize             = require('./helper/serialize')(scope);
   scope.set_deep              = require('./helper/set-deep')(scope);
   scope.transports            = require('./transport')(scope);
+
+  // Add getters/setters for some stuff we want to make public
+
+  /**
+   * Sets the token used for identifying the client/user to the server
+   *
+   * Only use this if you know to use a certain token
+   * Ordinarily, the client itself handles this
+   *
+   * @param {string} newToken
+   *
+   * @returns {Promise}
+   */
+  api.setToken = function(newToken) {
+    if (!newToken) { return Promise.resolve(); }
+    if ('string' !== typeof newToken) { return Promise.reject('The new token is not a string'); }
+    if (!newToken.length) { return Promise.reject('The new token is an empty string'); }
+    scope.token = newToken;
+    scope.user  = undefined;
+    return Promise.resolve();
+  };
+
+  /**
+   * Sets the refresh token used for updating the API token
+   *
+   * Only use this if you know to use a certain token
+   * Ordinarily, the client itself handles this
+   *
+   * @param {string} refreshToken
+   * @returns {Promise}
+   */
+  api.setRefreshToken = function (refreshToken) {
+    if (!refreshToken) { return Promise.resolve(); }
+    if ('string' !== typeof refreshToken) { return Promise.reject('The new token is not a string'); }
+    if (!refreshToken.length) { return Promise.reject('The new token is an empty string'); }
+    scope.refreshToken = refreshToken;
+    return Promise.resolve();
+  };
 
   return scope;
 };

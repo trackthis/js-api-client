@@ -21,26 +21,27 @@ module.exports = function (scope) {
     options = options || {};
     if ('object' !== typeof options) { throw "Given options was neither a string, an object or undefined"; }
     options.remote = options.remote || 'https://trackthis.nl/api';
-    var parsed = url.parse(options.remote);
+    var parsed     = url.parse(options.remote);
     scope.protocol = options.protocol || parsed.protocol || 'http';
     if (scope.protocol.slice(-1) === ':') { scope.protocol = scope.protocol.slice(0, -1); }
     if (!scope.transports[scope.protocol]) { return Promise.reject('Given protocol not supported'); }
-    scope.hostname = options.hostname || parsed.hostname || 'trackthis.nl';
-    scope.port     = options.port || parsed.port || (scope.transports[scope.protocol] && scope.transports[scope.protocol].defaultPort) || 8080;
-    scope.basePath = options.basePath || parsed.pathname || '/api/';
-    scope.transport    = scope.transports[scope.protocol].transport.bind(scope);
+    scope.hostname  = options.hostname || parsed.hostname || 'trackthis.nl';
+    scope.port      = options.port || parsed.port || (scope.transports[scope.protocol] && scope.transports[scope.protocol].defaultPort) || 8080;
+    scope.basePath  = options.basePath || parsed.pathname || '/api/';
+    scope.transport = scope.transports[scope.protocol].transport.bind(scope);
     if (scope.basePath.slice(-1) !== '/') { scope.basePath += '/'; }
     return scope
       .checkTransport()
-      .then(function() {
-        return scope.transport(Object.assign({name : 'versions'}, options))
+      .then(function () {
+        return scope
+          .transport(Object.assign({name : 'versions'}, options))
           .then(scope.catchRedirect)
           .then(function (response) {
-            var serverVersions = response.data.map(function (v) {
+            var serverVersions  = response.data.map(function (v) {
               return (v.substr(0, 1) === 'v') ? parseInt(v.substr(1)) : v;
             });
-            chosenVersion      = scope.intersect(serverVersions, scope.supportedVersions).pop();
-            if (!chosenVersion) {
+            scope.chosenVersion = scope.intersect(serverVersions, scope.supportedVersions).pop();
+            if (!scope.chosenVersion) {
               throw 'We do not support any versions supported by the server';
             }
           });
