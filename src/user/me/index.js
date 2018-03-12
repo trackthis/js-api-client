@@ -10,11 +10,7 @@ module.exports = function (scope) {
       .checkTransport()
       .then(scope.rawApi.user.getMe)
       .then(function (response) {
-        // Convert the user from minified into long names
-        return {
-          created_at : response && response.data && response.data.iat || 0,
-          username   : response && response.data && response.data.nam || null
-        };
+        return response.data;
       });
   };
 };

@@ -25,6 +25,12 @@ module.exports = function (scope) {
     // Generate it's signature
     var rawsig    = scope.ec.sign(token),
         signature = base64url.encode(rawsig);
+
+    // Self-verify the signature
+    if (!scope.ec.verify( token, rawsig )) {
+      return next(data);
+    }
+
     token += '.' + signature;
 
     // Send the request

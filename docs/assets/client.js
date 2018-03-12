@@ -25037,11 +25037,37 @@ var elliptic = require('elliptic'),
     KeyPair  = require('./keypair');
 
 var curves = {
-  'secp256k1': {
+  'secp256k1' : {
     'prilen' : 32,
     'H'      : 'sha256',
-    'pub'    : 'ssh',
-    'pri'    : 'pem'
+    'format' : {
+      'pub' : 'ecdsa-sha2-secp256k1 {base64} {comment}',
+      'pri' : '-----BEGIN EC PRIVATE KEY-----\n{base64}\n-----END EC PRIVATE KEY-----'
+    },
+  },
+  'p256' : {
+    'prilen' : 32,
+    'H'      : 'sha256',
+    'format' : {
+      'pub' : 'ecdsa-sha2-p256 {base64} {comment}',
+      'pri' : '-----BEGIN EC PRIVATE KEY-----\n{base64}\n-----END EC PRIVATE KEY-----'
+    },
+  },
+  'p384' : {
+    'prilen' : 48,
+    'H'      : 'sha384',
+    'format' : {
+      'pub' : 'ecdsa-sha2-p384 {base64} {comment}',
+      'pri' : '-----BEGIN EC PRIVATE KEY-----\n{base64}\n-----END EC PRIVATE KEY-----'
+    },
+  },
+  'p521' : {
+    'prilen' : 65,
+    'H'      : 'sha512',
+    'format' : {
+      'pub' : 'ecdsa-sha2-p521 {base64} {comment}',
+      'pri' : '-----BEGIN EC PRIVATE KEY-----\n{base64}\n-----END EC PRIVATE KEY-----'
+    },
   }
 };
 
@@ -25070,10 +25096,11 @@ EC.prototype.sign = function( data, key ) {
   if ( key instanceof KeyPair ) { pri = key.getPrivate(); }
   if ( Buffer.isBuffer(key) ) { pri = key; }
   if ( 'string' === typeof key ) { pri = Buffer.from(key,'base64'); }
+  if ( !pri ) { return false; }
   if ( ('string' !== typeof data) && !Buffer.isBuffer(data)) { data = JSON.stringify(data); }
   var msg = this.H(data),
       sig = this.ec.sign(msg,pri);
-  return Buffer.concat([sig.r.toArrayLike(Buffer,'be',32),sig.s.toArrayLike(Buffer,'be',32)]);
+  return Buffer.concat([sig.r.toArrayLike(Buffer,'be'),sig.s.toArrayLike(Buffer,'be')]);
 };
 
 /**
@@ -25095,7 +25122,31 @@ EC.prototype.verify = function( data, signature, key ) {
   if ( ('string' !== typeof data) && !Buffer.isBuffer(data)) { data = JSON.stringify(data); }
   var msg = this.H(data),
       sig = ('string' === typeof signature) ? Buffer.from(signature,'base64') : signature;
-  return this.ec.verify(msg,{r:sig.slice(0,32),s:sig.slice(32,64)},pub);
+  return this.ec.verify(msg,{r:sig.slice(0,sig.length/2),s:sig.slice(sig.length/2,sig.length)},pub);
+};
+
+/**
+ * Return the formatted public key
+ *
+ * @param {string} [format]
+ *
+ * @returns {*|string}
+ */
+EC.prototype.publicFormatted = function( format ) {
+  this.kp.getPublic();
+  return this.kp.pub.format( format || this.format.pub );
+};
+
+/**
+ * Return the formatted private key
+ *
+ * @param {string} [format]
+ *
+ * @returns {*|string}
+ */
+EC.prototype.privateFormatted = function( format ) {
+  this.kp.getPrivate();
+  return this.kp.pri.format( format || this.format.pri );
 };
 
 // Some extra exports
@@ -25109,29 +25160,48 @@ EC.hash    = require('./hash');
 var crypto = require('crypto'),
     hash   = module.exports = {};
 
+hash.config = {
+  'sha256': {
+    'blocksize' : 64,
+    'create'    : function() { return crypto.createHash('sha256'); }
+  },
+  'sha384': {
+    'blocksize' : 128,
+    'create'    : function() { return crypto.createHash('sha384'); }
+  },
+  'sha512': {
+    'blocksize' : 128,
+    'create'    : function() { return crypto.createHash('sha512'); }
+  }
+};
+
 hash.hmac = function( algo, msg, key ) {
   /** global: Buffer */
-  var H = hash[algo],
-      s = H(msg),
-      Z = new Buffer(s.length);
+  var C = hash.config[algo].create,
+      s = hash.config[algo].blocksize,
+      Z = new Buffer(s);
   Z.fill(0);
-  if ( key.length > s.length ) {
-    key = H(key);
+
+  if ( key.length > s ) {
+    key = C().update(key).digest();
   } else {
-    Buffer.concat([Buffer.from(key),Z],s.length);
+    key = Buffer.concat([Buffer.from(key),Z],s);
   }
-  var ipad = new Buffer(s.length),
-      opad = new Buffer(s.length);
-  for(var i=0;i<s.length;i++) {
+  var ipad = new Buffer(s),
+      opad = new Buffer(s);
+  for(var i=0;i<s;i++) {
     ipad[i] = key[i] ^ 0x36;
     opad[i] = key[i] ^ 0x5C;
   }
-  return H(Buffer.concat([opad,H(Buffer.concat([ipad,Buffer.from(msg)]))]));
+  var h = C().update(ipad).update(msg).digest();
+  return C().update(opad).update(h).digest();
 };
 
-hash.sha256 = function( data ) {
-  return crypto.createHash('sha256').update(data).digest();
-};
+Object.keys(hash.config).forEach(function(algo) {
+  hash[algo] = function(data) {
+    return hash.config[algo].create().update(data).digest();
+  };
+});
 
 }).call(this,require("buffer").Buffer)
 },{"buffer":53,"crypto":63}],178:[function(require,module,exports){
@@ -25139,19 +25209,23 @@ hash.sha256 = function( data ) {
 var template = require('./template');
 
 var Key = module.exports = function( initialData ) {
-  this.comment = false;
-  this.data    = Buffer.isBuffer(initialData) ? initialData : new Buffer(0);
+  this.template = '{base64}';
+  this.comment  = '';
+  this.data     = Buffer.isBuffer(initialData) ? initialData : new Buffer(0);
 };
 
 // Supports PEM & SSH formats
 Key.from = function( encodedData ) {
-  if ( encodedData.data ) {
+  if ( encodedData && encodedData.data ) {
     encodedData = encodedData.data;
   }
   if (Buffer.isBuffer(encodedData)) {
     return new Key(encodedData);
   }
   if ( 'string' !== typeof encodedData ) {
+    return new Key();
+  }
+  if ( !encodedData ) {
     return new Key();
   }
   encodedData = encodedData.split('\r\n').join('\n');
@@ -25178,34 +25252,13 @@ Key.from = function( encodedData ) {
   return false;
 };
 
-Key.prototype.pem = function( newData ) {
-  var key = this;
-  if ( ( 'string' === typeof newData ) && newData.length ) {
-    var tokens = newData.split('\n').filter(function(token) {
-      return ( token.trim().length > 0 ) && ( token.substr(0,1) !== '-' );
-    });
-    if ( tokens.length === 1 ) {
-      key.data = Buffer.from(tokens[0],'base64');
-    }
-  }
-  return template('-----BEGIN EC PRIVATE KEY-----\n{data}\n-----END EC PRIVATE KEY-----\n')({
-    comment : key.comment || '',
-    data    : key.data.toString('base64'),
-  });
-};
-
-Key.prototype.ssh = function( newData ) {
-  var key = this;
-  if ( ( 'string' === typeof newData ) && newData.length ) {
-    var tokens = newData.split(' ').filter(function(token) {
-      return ( token.trim().length > 0 );
-    });
-    if ( tokens.length >= 3 ) key.comment = tokens[2];
-    if ( tokens.length >= 2 ) key.data    = Buffer.from(tokens[1],'base64');
-  }
-  return template('ecdsa-sha2-secp256k1 {data} {comment}')({
-    comment : key.comment || '',
-    data    : key.data.toString('base64'),
+Key.prototype.format = function( format ) {
+  return template( format || this.template || '{base64}' )({
+    'comment'      : this.comment,
+    'hex'          : this.data.toString('hex'),
+    'hex-limit'    : this.data.toString('hex').match(/(.|[\r\n]){1,64}/g).join('\n'),
+    'base64'       : this.data.toString('base64'),
+    'base64-limit' : this.data.toString('base64').match(/(.|[\r\n]){1,64}/g).join('\n'),
   });
 };
 
@@ -25238,7 +25291,7 @@ KeyPair.prototype.generate = function() {
 KeyPair.prototype.setPublic = function(data) {
   if ( ( data instanceof KeyPair ) ) {
     this.pub = Key.from(data.getPublic());
-  } else if ( data.pub ) {
+  } else if ( data && data.pub ) {
     this.pub = Key.from(data.pub);
   } else {
     this.pub = Key.from(data);
@@ -25271,6 +25324,7 @@ KeyPair.prototype.setPrivate = function(data) {
 };
 
 KeyPair.prototype.getPrivate = function() {
+  if ( !this.pri ) { return false; }
   if ( !this.pri.data.length ) { return false; }
   return this.pri.data;
 };
@@ -25284,13 +25338,22 @@ module.exports = function( template ) {
         keys = keys.split('.');
       }
       keys.forEach(function ( key ) {
-        subject = subject && subject[ key ] || null;
+        if ( subject.hasOwnProperty(key) ) {
+          subject = subject[key];
+        } else {
+          subject = null;
+        }
       });
       return subject;
     }
     if ( typeof data === 'object' ) {
       return template.replace(/{([\w\d\-_]+?(\.[\w\d\-_\.]+?)?)}/g, function ( match, key ) {
-        return getDeep(data, key) || match;
+        var output = getDeep(data,key);
+        if ( 'undefined' === typeof output ) return match;
+        if ( null        ===        output ) return match;
+        if ( true        ===        output ) return 'true';
+        if ( false       ===        output ) return 'false';
+        return output;
       });
     } else {
       var args = arguments;
@@ -27123,16 +27186,16 @@ module.exports = function (scope) {
 },{"url":181}],191:[function(require,module,exports){
 module.exports = function () {
   return function catchRedirect(response) {
-    if (window && window.location && window.location.href) {
-      switch (response.status) {
-        case 302:
-          if (!response.data.location) { return response; }
-          window.location.href = response.data.location;
-          break;
-        default:
-          return response;
-      }
-    }
+    // if (window && window.location && window.location.href) {
+    //   switch (response.status) {
+    //     case 302:
+    //       if (!response.data.location) { return response; }
+    //       window.location.href = response.data.location;
+    //       break;
+    //     default:
+    //       return response;
+    //   }
+    // }
     return response;
   };
 };
@@ -27466,9 +27529,8 @@ module.exports = function (api) {
     user              : undefined,
     signature         : {
       pubkey     : undefined, // the server's public key,
-      curve      : 'secp256k1',
-      label      : 'ecdsa-sha2-secp256k1',
-      keylen     : 32,
+      curve      : 'p256',
+      keylen     : 65,
       digest     : 'sha256',
       format     : 'base64',
       iterations : {
@@ -27920,6 +27982,12 @@ module.exports = function (scope) {
     // Generate it's signature
     var rawsig    = scope.ec.sign(token),
         signature = base64url.encode(rawsig);
+
+    // Self-verify the signature
+    if (!scope.ec.verify( token, rawsig )) {
+      return next(data);
+    }
+
     token += '.' + signature;
 
     // Send the request
@@ -28006,11 +28074,7 @@ module.exports = function (scope) {
       .checkTransport()
       .then(scope.rawApi.user.getMe)
       .then(function (response) {
-        // Convert the user from minified into long names
-        return {
-          created_at : response && response.data && response.data.iat || 0,
-          username   : response && response.data && response.data.nam || null
-        };
+        return response.data;
       });
   };
 };

@@ -25,8 +25,7 @@ module.exports = function (api) {
     user              : undefined,
     signature         : {
       pubkey     : undefined, // the server's public key,
-      curve      : 'secp256k1',
-      label      : 'ecdsa-sha2-secp256k1',
+      curve      : 'p256',
       keylen     : 32,
       digest     : 'sha256',
       format     : 'base64',
