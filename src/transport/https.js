@@ -32,6 +32,10 @@ module.exports = function(scope) {
         }
       });
       return new Promise(function (resolve, reject) {
+        if ( options.token && 'string' === typeof options.token ) {
+          options.headers = options.headers || {};
+          options.headers['Authorization'] = 'Bearer ' + options.token;
+        }
         ajax(options, function (err, res, body) {
           var output = {
             status : res.statusCode,

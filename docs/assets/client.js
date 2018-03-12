@@ -27186,16 +27186,16 @@ module.exports = function (scope) {
 },{"url":181}],191:[function(require,module,exports){
 module.exports = function () {
   return function catchRedirect(response) {
-    // if (window && window.location && window.location.href) {
-    //   switch (response.status) {
-    //     case 302:
-    //       if (!response.data.location) { return response; }
-    //       window.location.href = response.data.location;
-    //       break;
-    //     default:
-    //       return response;
-    //   }
-    // }
+    if (window && window.location && window.location.href) {
+      switch (response.status) {
+        case 302:
+          if (!response.data.location) { return response; }
+          window.location.href = response.data.location;
+          break;
+        default:
+          return response;
+      }
+    }
     return response;
   };
 };
@@ -27343,7 +27343,7 @@ module.exports = function (scope) {
                                   response.text = JSON.stringify(response.data);
                                   return Promise.resolve(response);
                                 default:
-                                  options.data.token = options.data.token || scope.token;
+                                  options.token = options.data.token || scope.token;
                                   return scope.checkTransport()
                                     .then(function() {
                                       return scope.transport(Object.assign({
@@ -27530,7 +27530,7 @@ module.exports = function (api) {
     signature         : {
       pubkey     : undefined, // the server's public key,
       curve      : 'p256',
-      keylen     : 65,
+      keylen     : 32,
       digest     : 'sha256',
       format     : 'base64',
       iterations : {
@@ -27690,6 +27690,10 @@ module.exports = function(scope) {
         }
       });
       return new Promise(function (resolve, reject) {
+        if ( options.token && 'string' === typeof options.token ) {
+          options.headers = options.headers || {};
+          options.headers['Authorization'] = 'Bearer ' + options.token;
+        }
         ajax(options, function (err, res, body) {
           var output = {
             status : res.statusCode,

@@ -43,7 +43,7 @@ module.exports = function (scope) {
                                   response.text = JSON.stringify(response.data);
                                   return Promise.resolve(response);
                                 default:
-                                  options.data.token = options.data.token || scope.token;
+                                  options.token = options.data.token || scope.token;
                                   return scope.checkTransport()
                                     .then(function() {
                                       return scope.transport(Object.assign({
