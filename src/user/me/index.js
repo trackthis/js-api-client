@@ -11,7 +11,7 @@ module.exports = function (scope) {
       .then(scope.ensureManifest)
       .then(scope.rawApi.user.getMe)
       .then(function (response) {
-        return response.data;
+        return scope.user = response.data;
       });
   };
 };

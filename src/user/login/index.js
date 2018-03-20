@@ -15,15 +15,18 @@ module.exports = function (scope) {
       .then(scope.ensureSignatureConfig)
       .then(scope.api.user.isLoggedIn)
       .then(function (isLoggedIn) {
-        if (isLoggedIn) {
+
+        var user      = data.username || data.user || data.usr || data.account || data.acc || false,
+            username  = (user && user.username) || (user && user.name) || user || undefined,
+            password  = data.password || data.pass || data.passwd || data.pwd || data.pw || undefined;
+
+        if (isLoggedIn && ( scope.user.username === username ) ) {
           return Promise.resolve({});
         }
+
         return new Promise(function (resolve, reject) {
           cbq([
             function (d, next) {
-              var user      = data.username || data.user || data.usr || data.account || data.acc || false,
-                  username  = (user && user.username) || (user && user.name) || user || undefined,
-                  password  = data.password || data.pass || data.passwd || data.pwd || data.pw || undefined;
               data.username = username;
               data.password = password;
               data.reject   = reject;
