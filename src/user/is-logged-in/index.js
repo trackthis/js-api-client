@@ -8,9 +8,10 @@ module.exports = function (scope) {
     }
     return scope
       .checkTransport()
+      .then(scope.ensureManifest)
       .then(scope.rawApi.user.getMe)
       .then(function (response) {
-        return !!(response && response.username);
+        return !!(response && response.data && response.data.username);
       }, function () {
         return false;
       });

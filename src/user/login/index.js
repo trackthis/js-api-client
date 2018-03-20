@@ -10,41 +10,38 @@ module.exports = function (scope) {
   return function (data) {
     data = data || {};
     return scope
-      .api.isLoggedIn()
+      .checkTransport()
+      .then(scope.ensureManifest)
+      .then(scope.ensureSignatureConfig)
+      .then(scope.api.user.isLoggedIn)
       .then(function (isLoggedIn) {
         if (isLoggedIn) {
           return Promise.resolve({});
         }
-        return scope
-          .checkTransport()
-          .then(scope.ensureManifest)
-          .then(scope.ensureSignatureConfig)
-          .then(function () {
-            return new Promise(function (resolve, reject) {
-              cbq([
-                function (d, next) {
-                  var user      = data.username || data.user || data.usr || data.account || data.acc || false,
-                      username  = (user && user.username) || (user && user.name) || user || undefined,
-                      password  = data.password || data.pass || data.passwd || data.pwd || data.pw || undefined;
-                  data.username = username;
-                  data.password = password;
-                  data.reject   = reject;
-                  data.resolve  = function (response) {
-                    scope.api.emit('login', response);
-                    return resolve(response);
-                  };
-                  next(data);
-                },
+        return new Promise(function (resolve, reject) {
+          cbq([
+            function (d, next) {
+              var user      = data.username || data.user || data.usr || data.account || data.acc || false,
+                  username  = (user && user.username) || (user && user.name) || user || undefined,
+                  password  = data.password || data.pass || data.passwd || data.pwd || data.pw || undefined;
+              data.username = username;
+              data.password = password;
+              data.reject   = reject;
+              data.resolve  = function (response) {
+                scope.api.emit('login', response);
+                return resolve(response);
+              };
+              next(data);
+            },
 
-                require('./oauth/token')(scope),
-                require('./token/existing')(scope),
-                require('./token/existing-signed')(scope),
-                require('./username/signed')(scope),
-                require('./token/generated')(scope),
-                require('./oauth/auth')(scope),
-              ], reject.bind(undefined, 'None of our supported authentication methods is supported by the server'), reject);
-            });
-          });
+            require('./oauth/token')(scope),
+            require('./token/existing')(scope),
+            require('./token/existing-signed')(scope),
+            require('./username/signed')(scope),
+            require('./token/generated')(scope),
+            require('./oauth/auth')(scope),
+          ], reject.bind(undefined, 'None of our supported authentication methods is supported by the server'), reject);
+        });
       });
   };
 };

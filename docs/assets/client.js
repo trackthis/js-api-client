@@ -27186,16 +27186,16 @@ module.exports = function (scope) {
 },{"url":181}],191:[function(require,module,exports){
 module.exports = function () {
   return function catchRedirect(response) {
-    if (window && window.location && window.location.href) {
-      switch (response.status) {
-        case 302:
-          if (!response.data.location) { return response; }
-          window.location.href = response.data.location;
-          break;
-        default:
-          return response;
-      }
-    }
+    // if (window && window.location && window.location.href) {
+    //   switch (response.status) {
+    //     case 302:
+    //       if (!response.data.location) { return response; }
+    //       window.location.href = response.data.location;
+    //       break;
+    //     default:
+    //       return response;
+    //   }
+    // }
     return response;
   };
 };
@@ -27580,6 +27580,22 @@ module.exports = function (api) {
   };
 
   /**
+   * Sets the token expiry so we know when to fetch a new one
+   *
+   * Ordinarily, the client itself handles this
+   *
+   * @param {string} expiresAt
+   *
+   * @returns {Promise}
+   */
+  api.setTokenExpires = function(expiresAt) {
+    if (!expiresAt) { return Promise.resolve(); }
+    if (isNaN(expiresAt)) { return Promise.reject('The expires is not numeric'); }
+    scope.token_expires = parseInt(expiresAt);
+    return Promise.resolve();
+  };
+
+  /**
    * Sets the refresh token used for updating the API token
    *
    * Only use this if you know to use a certain token
@@ -27692,7 +27708,7 @@ module.exports = function(scope) {
       return new Promise(function (resolve, reject) {
         if ( options.token && 'string' === typeof options.token ) {
           options.headers = options.headers || {};
-          options.headers['Authorization'] = 'Bearer ' + options.token;
+          options.headers.Authorization = 'Bearer ' + options.token;
         }
         ajax(options, function (err, res, body) {
           var output = {
@@ -27761,14 +27777,36 @@ module.exports = function (scope) {
 },{"./http":204,"./https":205}],207:[function(require,module,exports){
 module.exports = function (scope) {
   return {
-    login  : require('./login')(scope),
-    logout : require('./logout')(scope),
-    me     : require('./me')(scope)
+    isLoggedIn : require('./is-logged-in')(scope),
+    login      : require('./login')(scope),
+    logout     : require('./logout')(scope),
+    me         : require('./me')(scope)
   };
 };
 
-},{"./login":208,"./logout":215,"./me":216}],208:[function(require,module,exports){
-module.exports = function(scope) {
+},{"./is-logged-in":208,"./login":209,"./logout":216,"./me":217}],208:[function(require,module,exports){
+module.exports = function (scope) {
+  /**
+   * Returns a promise to the current logged-in user
+   */
+  return function () {
+    if (scope.user) {
+      return Promise.resolve(true);
+    }
+    return scope
+      .checkTransport()
+      .then(scope.ensureManifest)
+      .then(scope.rawApi.user.getMe)
+      .then(function (response) {
+        return !!(response && response.data && response.data.username);
+      }, function () {
+        return false;
+      });
+  };
+};
+
+},{}],209:[function(require,module,exports){
+module.exports = function (scope) {
 
   /**
    * Try to login through all available methods
@@ -27777,40 +27815,46 @@ module.exports = function(scope) {
    *
    * @return {Promise}
    */
-  return function(data) {
+  return function (data) {
     data = data || {};
     return scope
       .checkTransport()
       .then(scope.ensureManifest)
       .then(scope.ensureSignatureConfig)
-      .then(function() {
-        return new Promise(function(resolve,reject) {cbq([
-          function(d,next) {
-            var user     = data.username || data.user || data.usr || data.account || data.acc || false,
-                username = ( user && user.username ) || ( user && user.name ) || user || undefined,
-                password = data.password || data.pass || data.passwd || data.pwd  || data.pw || undefined;
-            data.username = username;
-            data.password = password;
-            data.reject   = reject;
-            data.resolve  = function(response) {
-              scope.api.emit('login', response);
-              return resolve(response);
-            };
-            next(data);
-          },
+      .then(scope.api.user.isLoggedIn)
+      .then(function (isLoggedIn) {
+        if (isLoggedIn) {
+          return Promise.resolve({});
+        }
+        return new Promise(function (resolve, reject) {
+          cbq([
+            function (d, next) {
+              var user      = data.username || data.user || data.usr || data.account || data.acc || false,
+                  username  = (user && user.username) || (user && user.name) || user || undefined,
+                  password  = data.password || data.pass || data.passwd || data.pwd || data.pw || undefined;
+              data.username = username;
+              data.password = password;
+              data.reject   = reject;
+              data.resolve  = function (response) {
+                scope.api.emit('login', response);
+                return resolve(response);
+              };
+              next(data);
+            },
 
-          require('./oauth/token')(scope),
-          require('./token/existing')(scope),
-          require('./token/existing-signed')(scope),
-          require('./username/signed')(scope),
-          require('./token/generated')(scope),
-          require('./oauth/auth')(scope),
-        ], reject.bind(undefined,'None of our supported authentication methods is supported by the server'), reject);});
+            require('./oauth/token')(scope),
+            require('./token/existing')(scope),
+            require('./token/existing-signed')(scope),
+            require('./username/signed')(scope),
+            require('./token/generated')(scope),
+            require('./oauth/auth')(scope),
+          ], reject.bind(undefined, 'None of our supported authentication methods is supported by the server'), reject);
+        });
       });
   };
 };
 
-},{"./oauth/auth":209,"./oauth/token":210,"./token/existing":212,"./token/existing-signed":211,"./token/generated":213,"./username/signed":214}],209:[function(require,module,exports){
+},{"./oauth/auth":210,"./oauth/token":211,"./token/existing":213,"./token/existing-signed":212,"./token/generated":214,"./username/signed":215}],210:[function(require,module,exports){
 module.exports = function (scope) {
 
   // Try oauth init
@@ -27845,7 +27889,7 @@ module.exports = function (scope) {
 
 };
 
-},{}],210:[function(require,module,exports){
+},{}],211:[function(require,module,exports){
 module.exports = function (scope) {
 
   // Try oauth code from current query
@@ -27879,9 +27923,7 @@ module.exports = function (scope) {
         if (response.status === 200) {
           scope.api.setToken(response.data && response.data.access_token || scope.token);
           scope.api.setRefreshToken(response.data && response.data.refresh_token || scope.refresh_token);
-          if (response.data.expires_in && !isNaN(response.data.expires_in)) {
-            scope.token_expires = response.data.expires_in;
-          }
+          scope.api.setTokenExpires(response.data.expires_in   || response.data.expires || response.data.expires_at || response.data.exp || scope.token_expires);
           return data.resolve(response.data);
         }
         return next(data);
@@ -27891,7 +27933,7 @@ module.exports = function (scope) {
 
 };
 
-},{}],211:[function(require,module,exports){
+},{}],212:[function(require,module,exports){
 var base64url = require('base64url');
 
 module.exports = function (scope) {
@@ -27926,6 +27968,7 @@ module.exports = function (scope) {
         if (response.data && response.data.token) {
           scope.api.setToken(response.data.token || scope.token);
           scope.api.setRefreshToken(response.data.refreshToken || response.data.refresh_token || scope.refresh_token);
+          scope.api.setTokenExpires(response.data.expires_in   || response.data.expires || response.data.expires_at || response.data.exp || scope.token_expires);
           data.resolve(response.data);
         } else {
           next(data);
@@ -27934,7 +27977,7 @@ module.exports = function (scope) {
   };
 };
 
-},{"base64url":20}],212:[function(require,module,exports){
+},{"base64url":20}],213:[function(require,module,exports){
 module.exports = function (scope) {
   // Try an existing token
   return function (data, next, fail) {
@@ -27950,6 +27993,7 @@ module.exports = function (scope) {
         if (response.data && response.data.token) {
           scope.api.setToken(response.data.token || scope.token);
           scope.api.setRefreshToken(response.data.refreshToken || response.data.refresh_token || scope.refreshToken);
+          scope.api.setTokenExpires(response.data.expires_in   || response.data.expires || response.data.expires_at || response.data.exp || scope.token_expires);
           data.resolve(response.data);
         } else {
           next(data);
@@ -27958,7 +28002,7 @@ module.exports = function (scope) {
   };
 };
 
-},{}],213:[function(require,module,exports){
+},{}],214:[function(require,module,exports){
 var base64url = require('base64url');
 
 module.exports = function (scope) {
@@ -28002,6 +28046,7 @@ module.exports = function (scope) {
         if (response.data && response.data.token) {
           scope.api.setToken(response.data.token || scope.token);
           scope.api.setRefreshToken(response.data.refreshToken || response.data.refresh_token || scope.refreshToken);
+          scope.api.setTokenExpires(response.data.expires_in   || response.data.expires || response.data.expires_at || response.data.exp || scope.token_expires);
           data.resolve(response.data);
         } else {
           next(data);
@@ -28011,7 +28056,7 @@ module.exports = function (scope) {
 
 };
 
-},{"base64url":20}],214:[function(require,module,exports){
+},{"base64url":20}],215:[function(require,module,exports){
 var base64url = require('base64url');
 
 module.exports = function (scope) {
@@ -28037,6 +28082,7 @@ module.exports = function (scope) {
         if (response.data && response.data.token) {
           scope.api.setToken(response.data.token || scope.token);
           scope.api.setRefreshToken(response.data.refreshToken || response.data.refresh_token || scope.refreshToken);
+          scope.api.setTokenExpires(response.data.expires_in   || response.data.expires || response.data.expires_at || response.data.exp || scope.token_expires);
           data.resolve(response.data);
         } else {
           next(data);
@@ -28047,7 +28093,7 @@ module.exports = function (scope) {
 
 };
 
-},{"base64url":20}],215:[function(require,module,exports){
+},{"base64url":20}],216:[function(require,module,exports){
 module.exports = function (scope) {
   /**
    * Logs out the user inside this browser
@@ -28065,7 +28111,7 @@ module.exports = function (scope) {
   };
 };
 
-},{}],216:[function(require,module,exports){
+},{}],217:[function(require,module,exports){
 module.exports = function (scope) {
   /**
    * Returns a promise to the current logged-in user
@@ -28076,6 +28122,7 @@ module.exports = function (scope) {
     }
     return scope
       .checkTransport()
+      .then(scope.ensureManifest)
       .then(scope.rawApi.user.getMe)
       .then(function (response) {
         return response.data;
@@ -28083,7 +28130,7 @@ module.exports = function (scope) {
   };
 };
 
-},{}],217:[function(require,module,exports){
+},{}],218:[function(require,module,exports){
 (function (apiObject) {
   // Register to AMD or attach to the window
   /** global: define */
@@ -28096,4 +28143,4 @@ module.exports = function (scope) {
   }
 })(require('./index'));
 
-},{"./index":202}]},{},[217]);
+},{"./index":202}]},{},[218]);
