@@ -4,7 +4,7 @@ module.exports = function (scope) {
    */
   return function () {
     if (scope.user) {
-      return Promise.resolve(scope.user);
+      return Promise.resolve(true);
     }
     return scope
       .checkTransport()
