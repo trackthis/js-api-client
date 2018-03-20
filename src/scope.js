@@ -76,6 +76,22 @@ module.exports = function (api) {
   };
 
   /**
+   * Sets the token expiry so we know when to fetch a new one
+   *
+   * Ordinarily, the client itself handles this
+   *
+   * @param {string} expiresAt
+   *
+   * @returns {Promise}
+   */
+  api.setTokenExpires = function(expiresAt) {
+    if (!expiresAt) { return Promise.resolve(); }
+    if (isNaN(expiresAt)) { return Promise.reject('The expires is not numeric'); }
+    scope.token_expires = parseInt(expiresAt);
+    return Promise.resolve();
+  };
+
+  /**
    * Sets the refresh token used for updating the API token
    *
    * Only use this if you know to use a certain token

@@ -31,9 +31,7 @@ module.exports = function (scope) {
         if (response.status === 200) {
           scope.api.setToken(response.data && response.data.access_token || scope.token);
           scope.api.setRefreshToken(response.data && response.data.refresh_token || scope.refresh_token);
-          if (response.data.expires_in && !isNaN(response.data.expires_in)) {
-            scope.token_expires = response.data.expires_in;
-          }
+          scope.api.setTokenExpires(response.data.expires_in   || response.data.expires || response.data.expires_at || response.data.exp || scope.token_expires);
           return data.resolve(response.data);
         }
         return next(data);
