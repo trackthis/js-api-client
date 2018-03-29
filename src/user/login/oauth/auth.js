@@ -19,8 +19,8 @@ module.exports = function (scope) {
         data : {
           account       : data.username,
           response_type : 'code',
-          client_id     : scope.clientId || 'APP-00',
-          redirect_uri  : scope.callback || 'http://localhost:5000/',
+          client_id     : scope.clientId     || 'APP-00',
+          redirect_uri  : scope.redirect_uri || 'http://trackthis.nl/',
           scope         : ''
         }
       })
