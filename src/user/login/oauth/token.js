@@ -21,7 +21,7 @@ module.exports = function (scope) {
         data : {
           grant_type    : 'authorization_code',
           code          : code,
-          redirect_uri  : scope.callback      || 'http://localhost:5000/',
+          redirect_uri  : scope.redirect_uri  || 'http://trackthis.nl/',
           client_id     : scope.client_id     || 'APP-00',
           client_secret : scope.client_secret || '8509203eb2b2dc05d71d382bbe9cbbfe409ddd13c6827c5ca477f6251ad9d7a9',
         }
