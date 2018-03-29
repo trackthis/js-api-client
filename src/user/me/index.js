@@ -9,7 +9,9 @@ module.exports = function (scope) {
     return scope
       .checkTransport()
       .then(scope.ensureManifest)
-      .then(scope.rawApi.user.getMe)
+      .then(function() {
+        return scope.rawApi.user.getMe();
+      })
       .then(function (response) {
         scope.user = response.data;
         return response.data;
