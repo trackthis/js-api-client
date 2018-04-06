@@ -7,12 +7,15 @@ module.exports = function (scope) {
    * @returns {Promise}
    */
   return function ensureSignatureConfig() {
-    return new Promise(function (resolve) {
+    return new Promise(function (resolve, reject) {
       if (scope.signature.pubkey) { return resolve(); }
       return scope
         .ensureManifest()
         .then(scope.rawApi.signature.getConfig)
         .then(function (response) {
+          if (! (response && response.data)) {
+            return Promise.reject('No data was given');
+          }
           scope.signature.curve     = response.data.curve      || scope.signature.curve;
           scope.signature.digest    = response.data.digest     || scope.signature.digest;
           scope.signature.format    = response.data.format     || scope.signature.format;
@@ -23,7 +26,7 @@ module.exports = function (scope) {
             scope.ec = new EC(scope.signature.curve);
           }
         })
-        .then(resolve);
+        .then(resolve, reject);
     }).then(scope.noop);
   };
 
