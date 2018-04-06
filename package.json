@@ -1,6 +1,6 @@
 {
   "name": "trackthis-api-client",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Default trackthis API client for javascript",
   "main": "src/index.js",
   "scripts": {
