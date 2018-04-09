@@ -10,9 +10,15 @@ module.exports = function (scope) {
       .checkTransport()
       .then(scope.ensureManifest)
       .then(function() {
+        if (!(scope.token || scope.refresh_token)) {
+          return false;
+        }
         return scope.rawApi.user.getMe();
       })
       .then(function (response) {
+        if ( 'boolean' === typeof response ) {
+          return response;
+        }
         return !!(response && response.data && response.data.username);
       }, function () {
         return false;
