@@ -41,7 +41,7 @@ module.exports = function(scope) {
           if ( (tries<8) && res && (res.statusCode === 500) && (options.method ==='GET') ) {
             setTimeout(function() {
               resolve(_transport(options,tries+1));
-            }, 15*(2**tries) );
+            }, 15 * Math.pow(2,tries) );
             return;
           }
           var output = {
