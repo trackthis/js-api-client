@@ -8,6 +8,7 @@ module.exports = function (scope) {
     // Try to fetch the code
     var code = data.code || false;
     if ( (!code) && window && window.location && window.location.search) {
+      // TODO: remove the code from the url
       var query = scope.deserialize(window.location.search.slice(1));
       code      = query.code || false;
     }
