@@ -10,7 +10,8 @@ var ajax = require('ajax-request'),
 module.exports = function(scope) {
   return {
     defaultPort : 443,
-    transport   : function (options) {
+    transport   : function _transport(options, tries) {
+      tries = tries || 0;
       if ('string' === typeof options) { options = {name : options}; }
       options = options || {};
       if (!options.name) { return Promise.reject('No name given'); }
@@ -37,6 +38,12 @@ module.exports = function(scope) {
           options.headers.Authorization = 'Bearer ' + options.token;
         }
         ajax(options, function (err, res, body) {
+          if ( (tries<8) && res && (res.statusCode === 500) && (options.method ==='GET') ) {
+            setTimeout(function() {
+              resolve(_transport(options,tries+1));
+            }, 15*(2**tries) );
+            return;
+          }
           var output = {
             status : res.statusCode,
             text   : body,
