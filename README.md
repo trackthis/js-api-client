@@ -1,5 +1,7 @@
 # Trackthis API client
 
+[![Codetree](https://codetree.com/images/managed-with-codetree.svg)](https://codetree.com/projects/gX1r)
+
 [![npm](https://img.shields.io/npm/v/trackthis-api-client.svg?style=flat-square)](https://npmjs.com/package/trackthis-api-client/)
 [![Scrutinizer Build](https://img.shields.io/scrutinizer/build/g/trackthis/js-api-client.svg?style=flat-square)](https://scrutinizer-ci.com/g/trackthis/js-api-client/)
 [![Scrutinizer](https://img.shields.io/scrutinizer/g/trackthis/js-api-client.svg?style=flat-square)](https://scrutinizer-ci.com/g/trackthis/js-api-client/)
