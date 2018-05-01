@@ -54,7 +54,10 @@ module.exports = function(scope) {
           } catch (e) {
             output.data = null;
           }
-          if (err) { return reject(Object.assign({error : err}, output)); }
+          if ( err ) {
+            output.errors = output.errors || [];
+            output.errors.push(err);
+          }
           resolve(output);
           return undefined;
         });
