@@ -27275,12 +27275,15 @@ module.exports = function (scope) {
    * @returns {Promise}
    */
   return function ensureSignatureConfig() {
-    return new Promise(function (resolve) {
+    return new Promise(function (resolve, reject) {
       if (scope.signature.pubkey) { return resolve(); }
       return scope
         .ensureManifest()
         .then(scope.rawApi.signature.getConfig)
         .then(function (response) {
+          if (! (response && response.data)) {
+            return Promise.reject('No data was given');
+          }
           scope.signature.curve     = response.data.curve      || scope.signature.curve;
           scope.signature.digest    = response.data.digest     || scope.signature.digest;
           scope.signature.format    = response.data.format     || scope.signature.format;
@@ -27291,7 +27294,7 @@ module.exports = function (scope) {
             scope.ec = new EC(scope.signature.curve);
           }
         })
-        .then(resolve);
+        .then(resolve, reject);
     }).then(scope.noop);
   };
 
@@ -27684,7 +27687,8 @@ var ajax = require('ajax-request'),
 module.exports = function(scope) {
   return {
     defaultPort : 443,
-    transport   : function (options) {
+    transport   : function _transport(options, tries) {
+      tries = tries || 0;
       if ('string' === typeof options) { options = {name : options}; }
       options = options || {};
       if (!options.name) { return Promise.reject('No name given'); }
@@ -27711,6 +27715,12 @@ module.exports = function(scope) {
           options.headers.Authorization = 'Bearer ' + options.token;
         }
         ajax(options, function (err, res, body) {
+          if ( (tries<8) && res && (res.statusCode === 500) && (options.method ==='GET') ) {
+            setTimeout(function() {
+              resolve(_transport(options,tries+1));
+            }, 15 * Math.pow(2,tries) );
+            return;
+          }
           var output = {
             status : res.statusCode,
             text   : body,
@@ -27721,7 +27731,10 @@ module.exports = function(scope) {
           } catch (e) {
             output.data = null;
           }
-          if (err) { return reject(Object.assign({error : err}, output)); }
+          if ( err ) {
+            output.errors = output.errors || [];
+            output.errors.push(err);
+          }
           resolve(output);
           return undefined;
         });
@@ -27797,9 +27810,15 @@ module.exports = function (scope) {
       .checkTransport()
       .then(scope.ensureManifest)
       .then(function() {
+        if (!(scope.token || scope.refresh_token)) {
+          return false;
+        }
         return scope.rawApi.user.getMe();
       })
       .then(function (response) {
+        if ( 'boolean' === typeof response ) {
+          return response;
+        }
         return !!(response && response.data && response.data.username);
       }, function () {
         return false;
@@ -27814,11 +27833,13 @@ module.exports = function (scope) {
    * Try to login through all available methods
    *
    * @param {object} [data]
+   * @param {object} [options]
    *
    * @return {Promise}
    */
-  return function (data) {
-    data = data || {};
+  return function (data, options) {
+    data    = data    || {};
+    options = options || {};
     return scope
       .checkTransport()
       .then(scope.ensureManifest)
@@ -27834,26 +27855,62 @@ module.exports = function (scope) {
           return Promise.resolve({});
         }
 
-        return new Promise(function (resolve, reject) {
-          cbq([
-            function (d, next) {
-              data.username = username;
-              data.password = password;
-              data.reject   = reject;
-              data.resolve  = function (response) {
-                scope.api.emit('login', response);
-                return resolve(response);
-              };
-              next(data);
-            },
+        // Detect which methods to (not) use
+        var methods = {
+          oauth          : true,
+          tokenExisting  : true,
+          tokenSigned    : true,
+          tokenGenerated : true,
+          usernameSigned : true
+        };
+        if ( 'object' === typeof options.methods && Object.keys(options.methods).length ) {
+          Object.assign(methods, options.methods);
+        }
 
-            require('./oauth/token')(scope),
-            require('./token/existing')(scope),
-            require('./token/existing-signed')(scope),
-            require('./username/signed')(scope),
-            require('./token/generated')(scope),
-            require('./oauth/auth')(scope),
-          ], reject.bind(undefined, 'None of our supported authentication methods is supported by the server'), reject);
+        // Always return a promise
+        return new Promise(function (resolve, reject) {
+
+          // Queue init
+          var queue = [function(d, next) {
+            data.username = username;
+            data.password = password;
+            data.reject   = reject;
+            data.resolve  = function (response) {
+              scope.api.emit('login', response);
+              return resolve(response);
+            };
+            next(data);
+          }];
+
+          // Oauth access_code catch
+          if ( methods.oauth ) {
+            queue.push(require('./oauth/token')(scope));
+          }
+
+          // Tokens
+          if ( methods.tokenExisting ) {
+            queue.push(require('./token/existing')(scope));
+          }
+          if ( methods.tokenSigned ) {
+            queue.push(require('./token/existing-signed')(scope));
+          }
+
+          // Signed username
+          if ( methods.usernameSigned ) {
+            queue.push(require('./username/signed')(scope));
+          }
+
+          // Self-generated token
+          if ( methods.tokenGenerated ) {
+            queue.push(require('./token/generated')(scope));
+          }
+
+          // Actual oauth
+          if ( methods.oauth ) {
+            queue.push(require('./oauth/auth')(scope));
+          }
+
+          cbq(queue, reject.bind(undefined, 'None of our supported authentication methods is supported by the server'), reject);
         });
       });
   };
@@ -27905,6 +27962,7 @@ module.exports = function (scope) {
     // Try to fetch the code
     var code = data.code || false;
     if ( (!code) && window && window.location && window.location.search) {
+      // TODO: remove the code from the url
       var query = scope.deserialize(window.location.search.slice(1));
       code      = query.code || false;
     }
