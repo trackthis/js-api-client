@@ -4,11 +4,13 @@ module.exports = function (scope) {
    * Try to login through all available methods
    *
    * @param {object} [data]
+   * @param {object} [options]
    *
    * @return {Promise}
    */
-  return function (data) {
-    data = data || {};
+  return function (data, options) {
+    data    = data    || {};
+    options = options || {};
     return scope
       .checkTransport()
       .then(scope.ensureManifest)
@@ -32,8 +34,8 @@ module.exports = function (scope) {
           tokenGenerated : true,
           usernameSigned : true
         };
-        if ( 'object' === typeof data.methods && Object.keys(data).length ) {
-          Object.assign(methods, data.methods);
+        if ( 'object' === typeof options.methods && Object.keys(options.methods).length ) {
+          Object.assign(methods, options.methods);
         }
 
         // Always return a promise
