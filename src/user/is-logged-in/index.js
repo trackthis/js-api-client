@@ -13,7 +13,7 @@ module.exports = function (scope) {
         if (!(scope.token || scope.refresh_token)) {
           return false;
         }
-        return scope.rawApi.user.getMe();
+        return scope.rawApi.user.getMe({ retry: 1 });
       })
       .then(function (response) {
         if ( 'boolean' === typeof response ) {
