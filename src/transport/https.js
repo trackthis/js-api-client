@@ -22,11 +22,20 @@ module.exports = function(scope) {
       options.method   = (options.method || 'get').toUpperCase();
       options.protocol = options.protocol || parsed.protocol || scope.protocol || (document && document.location && document.location.protocol);
       if (options.protocol.slice(-1) !== ':') { options.protocol += ':'; }
-      options.hostname = options.hostname || parsed.hostname || scope.hostname || (document && document.location && document.location.hostname);
-      options.port     = options.port || parsed.port || scope.port || (document && document.location && document.location.port);
-      options.pathname = options.pathname || (scope.basePath + ((options.name === 'versions') ? '' : ('v' + scope.chosenVersion + '/')) + options.name + '.json');
-      options.url      = url.format(options);
-      options.data     = options.data || {};
+      options.hostname  = options.hostname || parsed.hostname || scope.hostname || (document && document.location && document.location.hostname);
+      options.port      = options.port || parsed.port || scope.port || (document && document.location && document.location.port);
+      options.pathname  = options.pathname || (scope.basePath + ((options.name === 'versions') ? '' : ('v' + scope.chosenVersion + '/')) + options.name + '.json');
+      options.url       = url.format(options);
+      options.data      = options.data || {};
+      if ( 'boolean' === typeof options.retry ) {
+        options.retry = options.retry ? 1 : 0;
+      } else if ( 'string' === typeof options.retry ) {
+        options.retry = parseInt(options.retry) || 0;
+      } else if ( 'number' === typeof options.retry ) {
+        options.retry = Math.floor(options.retry);
+      } else {
+        options.retry = 8;
+      }
       Object.keys(options.data).forEach(function(key) {
         if ( 'undefined' === typeof options.data[key] ) {
           delete options.data[key];
@@ -38,7 +47,7 @@ module.exports = function(scope) {
           options.headers.Authorization = 'Bearer ' + options.token;
         }
         ajax(options, function (err, res, body) {
-          if ( (tries<8) && res && (res.statusCode === 500) && (options.method ==='GET') ) {
+          if ( (tries<options.retry) && res && (res.statusCode === 500) && (options.method ==='GET') ) {
             setTimeout(function() {
               resolve(_transport(options,tries+1));
             }, 15 * Math.pow(2,tries) );
