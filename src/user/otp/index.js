@@ -3,7 +3,14 @@ module.exports = function (scope) {
    * Returns whether OTP is required/optional for the user
    */
   return function (data) {
-    data         = data || {};
+    data = data || {};
+    if ( 'string' === typeof data ) {
+      data = { username: data };
+    }
+
+    if ( 'object' !== typeof data ) {
+      return Promise.reject('No valid data was given');
+    }
 
     // Fetch the username
     var username = false;
@@ -20,7 +27,7 @@ module.exports = function (scope) {
       .checkTransport()
       .then(scope.ensureManifest)
       .then(function() {
-        return scope.rawApi.oauth['getOtp-required']();
+        return scope.rawApi.oauth['getOtp-required']({ data: data });
       })
       .then(function (response) {
         return response.data;
