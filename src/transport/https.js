@@ -46,6 +46,8 @@ module.exports = function(scope) {
           options.headers = options.headers || {};
           options.headers.Authorization = 'Bearer ' + options.token;
         }
+        console.log('url:', options.url);
+        console.log('data:', options.data);
         ajax(options, function (err, res, body) {
           if ( (tries<options.retry) && res && (res.statusCode === 500) && (options.method ==='GET') ) {
             setTimeout(function() {

@@ -24,6 +24,9 @@ module.exports = function (scope) {
                               var returnType = ( data[key][method] && data[key][method].return && data[key][method].return.type ) || 'Object';
                               options = options || {};
                               options.data = options.data || {};
+                              if ( ( returnType === 'Page' ) && ( options.noRedirect ) ) {
+                                returnType = 'Object';
+                              }
                               switch(returnType) {
                                 case 'Page':
                                   var protocol = scope.protocol;

@@ -31,6 +31,7 @@ module.exports = function (scope) {
         // Detect which methods to (not) use
         var methods = {
           oauth          : true,
+          oauthAuthCode  : false,
           tokenExisting  : true,
           tokenSigned    : true,
           tokenGenerated : true,
@@ -54,6 +55,11 @@ module.exports = function (scope) {
             };
             next(data);
           }];
+
+          // Maybe fetch the authorization code
+          if ( methods.oauthAuthCode ) {
+            queue.push(require('./oauth/get-code')(scope));
+          }
 
           // Oauth access_code catch
           if ( methods.oauth ) {

@@ -4,6 +4,7 @@ module.exports = function (scope) {
     login      : require('./login')(scope),
     logout     : require('./logout')(scope),
     me         : require('./me')(scope),
-    otp        : require('./otp')(scope)
+    otp        : require('./otp')(scope),
+    oauth      : require('./otp')(scope)
   };
 };
