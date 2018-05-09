@@ -27,7 +27,11 @@ module.exports = function (scope) {
       .checkTransport()
       .then(scope.ensureManifest)
       .then(function() {
-        return scope.rawApi.oauth['getOtp-required']({ data: data });
+        return scope.rawApi.oauth['getOtp-required']({
+          data : {
+            username : username
+          }
+        });
       })
       .then(function (response) {
         return response.data;
