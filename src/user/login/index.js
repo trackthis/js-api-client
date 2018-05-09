@@ -1,3 +1,5 @@
+// TODO: move this to auth instead of user?
+
 module.exports = function (scope) {
 
   /**
