@@ -9,7 +9,7 @@ module.exports = function (scope) {
     var username = false;
     username = username || data.username;
     username = username || data.usr;
-    username = username || data.username;
+    username = username || data.user;
     username = username || ( scope.user && scope.user.username );
     if(!username) {
       return Promise.reject('No username was given');
