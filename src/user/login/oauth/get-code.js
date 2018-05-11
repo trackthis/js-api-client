@@ -44,7 +44,7 @@ module.exports = function (scope) {
       data       : {
         account       : data.username,
         response_type : 'code',
-        client_id     : data.client_id || data.clientId || scope.clientId || 'APP-00',
+        client_id     : data.client_id || data.clientId || scope.clientId || 'APP-00', // TODO: make this nicer
         redirect_uri  : scope.redirect_uri || 'http://trackthis.nl/',
         username      : data.username,
         password      : data.password
