@@ -1,6 +1,7 @@
 // TODO: move this to auth instead of user?
 
 module.exports = function (scope) {
+  var cbq = scope.cbq;
 
   /**
    * Try to login through all available methods
@@ -29,17 +30,15 @@ module.exports = function (scope) {
         }
 
         // Detect which methods to (not) use
-        var methods = {
+        options.methods = options.methods || {};
+        var methods = Object.assign({
           oauth          : true,
           oauthAuthCode  : false,
           tokenExisting  : true,
           tokenSigned    : true,
           tokenGenerated : true,
           usernameSigned : true
-        };
-        if ( 'object' === typeof options.methods && Object.keys(options.methods).length ) {
-          Object.assign(methods, options.methods);
-        }
+        }, options.methods);
 
         // Always return a promise
         return new Promise(function (resolve, reject) {

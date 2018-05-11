@@ -18,11 +18,11 @@
 })(function() {
   return function cbq(list,resolve,reject) {
     var q = list.slice();
-    return (function next(data) {
+    resolve = resolve || function(d){return d;};
+    return (function next(d) {
       var f = q.shift();
-      if (!f) { return ( 'function' === typeof resolve ) ? resolve(data) : data; }
-      setTimeout( function () { f( data, next, reject ); },0 );
-      return undefined;
+      if (!f) return resolve(d);
+      return f(d,next,reject);
     })();
   };
 });

@@ -13,8 +13,6 @@ module.exports = function (scope) {
       }).join(',');
     }
 
-    console.log('get-code');
-
     // account=admin
     // response_type=code
     // client_id=APP-00
