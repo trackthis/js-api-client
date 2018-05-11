@@ -27726,8 +27726,6 @@ module.exports = function(scope) {
           options.headers = options.headers || {};
           options.headers.Authorization = 'Bearer ' + options.token;
         }
-        console.log('url:', options.url);
-        console.log('data:', options.data);
         ajax(options, function (err, res, body) {
           if ( (tries<options.retry) && res && (res.statusCode === 500) && (options.method ==='GET') ) {
             setTimeout(function() {
@@ -27804,16 +27802,16 @@ module.exports = function (scope) {
 },{"./http":204,"./https":205}],207:[function(require,module,exports){
 module.exports = function (scope) {
   return {
-    isLoggedIn : require('./is-logged-in')(scope),
-    login      : require('./login')(scope),
-    logout     : require('./logout')(scope),
-    me         : require('./me')(scope),
-    otp        : require('./otp')(scope),
-    oauth      : require('./otp')(scope)
+    isLoggedIn    : require('./is-logged-in')(scope),
+    login         : require('./login')(scope),
+    logout        : require('./logout')(scope),
+    me            : require('./me')(scope),
+    otp           : require('./otp')(scope),
+    resetPassword : require('./reset-password')(scope)
   };
 };
 
-},{"./is-logged-in":208,"./login":209,"./logout":217,"./me":218,"./otp":219}],208:[function(require,module,exports){
+},{"./is-logged-in":208,"./login":209,"./logout":217,"./me":218,"./otp":219,"./reset-password":220}],208:[function(require,module,exports){
 module.exports = function (scope) {
   /**
    * Returns a promise to the current logged-in user
@@ -28340,6 +28338,30 @@ module.exports = function (scope) {
 };
 
 },{}],220:[function(require,module,exports){
+module.exports = function (scope) {
+  /**
+   * Returns a promise to the current logged-in user
+   */
+  return function ( data ) {
+    data = data || {};
+    if ( 'string' === typeof data ) {
+      data = { username: data };
+    }
+    return scope
+      .checkTransport()
+      .then(scope.ensureManifest)
+      .then(function() {
+        return scope.rawApi.user['getReset-password']({ retry: false, data: data });
+      })
+      .then(function (response) {
+        return !!response.data;
+      }, function () {
+        return false;
+      });
+  };
+};
+
+},{}],221:[function(require,module,exports){
 (function (apiObject) {
   // Register to AMD or attach to the window
   /** global: define */
@@ -28352,4 +28374,4 @@ module.exports = function (scope) {
   }
 })(require('./index'));
 
-},{"./index":202}]},{},[220]);
+},{"./index":202}]},{},[221]);
