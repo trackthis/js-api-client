@@ -68,6 +68,11 @@ module.exports = function (scope) {
           }
         }
 
+        // Invalid credentials
+        if ( response.data.errors && response.data.errors.length ) {
+          return next(data);
+        }
+
         // Untrusted
         return data.resolve(response.data);
       });
