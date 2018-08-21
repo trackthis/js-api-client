@@ -2,11 +2,9 @@
 process.env.DEBUG = 1;
 
 var path    = require('path'),
-    assert  = require('assert');
-    helpers = require('trackthis-helpers')();
-
-var fs = helpers.fs;
-
+    assert  = require('assert'),
+    fs      = require('fs-extra'),
+    helpers = require('trackthis-helpers')({fs});
 
 // Defining globals
 /** global: approot */
@@ -16,10 +14,9 @@ global.approot = path.dirname(__dirname);
 global.co      = require('co');
 global.Promise = require('bluebird');
 
-
-// Other libraries
+    // Other libraries
     var JSHINT = require('jshint').JSHINT,
-      files  = [];
+        files  = [];
 
     var Mocha = global.Mocha || require('mocha');
     var Test  = Mocha.Test;
