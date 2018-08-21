@@ -5,10 +5,7 @@ var path    = require('path'),
     assert  = require('assert');
     helpers = require('trackthis-helpers')();
 
-
 var fs = helpers.fs;
-
-console.log(fs);
 
 
 // Defining globals
