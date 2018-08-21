@@ -5,3 +5,4 @@
 coverage/
 coverage-cache/
 /test-output.txt
+/.gtm/
