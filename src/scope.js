@@ -35,9 +35,9 @@ module.exports = function (api) {
         modulo : 9000
       }
     },
-    cache            : {
+    cache            : {   // list resource methods to cache
       user  : {
-        me: 7200
+        me: true
       }
     }
   };
