@@ -47,6 +47,15 @@ module.exports = function (scope) {
                                   return Promise.resolve(response);
                                 default:
                                   options.token = options.data.token || scope.token;
+                                  // add allow cache headers
+                                  if(scope.cache && scope.cache[path[0]] && scope.cache[path[0]][key]) {
+                                    Object.assign(options, {
+                                        headers : {
+                                          'Cache-Control' : 'private',
+                                        }
+                                      }
+                                    );
+                                  }
                                   return scope.checkTransport()
                                     .then(function() {
                                       return scope.transport(Object.assign({
