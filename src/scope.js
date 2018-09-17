@@ -34,6 +34,11 @@ module.exports = function (api) {
         hash   : 'sha256',
         modulo : 9000
       }
+    },
+    cache            : {   // list resource methods to cache
+      user  : {
+        me: true
+      }
     }
   };
 
