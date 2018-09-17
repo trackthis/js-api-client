@@ -1,6 +1,7 @@
-var path   = require('path'),
-    assert = require('assert'),
-    fs     = require('fs-extra');
+var path    = require('path'),
+    assert  = require('assert'),
+    fs      = require('fs-extra'),
+    helpers = require('trackthis-helpers')({fs, fix:{mocha: true}});
 
 // Defining globals
 /** global: approot */
@@ -9,9 +10,6 @@ var path   = require('path'),
 global.approot = path.dirname(__dirname);
 global.co      = require('co');
 global.Promise = require('bluebird');
-
-// Load helpers
-require('./helpers');
 
 // Other libraries
 var JSHINT = require('jshint').JSHINT,
